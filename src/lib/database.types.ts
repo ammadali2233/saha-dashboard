@@ -755,7 +755,10 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "app_role":
+            "accept_quote":
+{ Args: { "p_quote": string }; Returns: string
+                           },
+"app_role":
 { Args: Record<PropertyKey, never>; Returns: Database["public"]['Enums']["app_role"]
                            },
 "booking_holds_dates":
@@ -785,6 +788,9 @@ isOneToOne: false
                            },
 "generate_recurring_expenses":
 { Args: { "p_today"?: string }; Returns: number
+                           },
+"get_public_quote":
+{ Args: { "p_token": string }; Returns: Json
                            },
 "hook_before_user_created":
 { Args: { "event": Json }; Returns: Json
@@ -816,6 +822,9 @@ isOneToOne: false
                            },
 "save_booking":
 { Args: { "p_booking": Json,"p_guest"?: Json,"p_lines": Json }; Returns: string
+                           },
+"save_quote":
+{ Args: { "p_lines": Json,"p_quote": Json }; Returns: string
                            },
 "set_channel_ical_url":
 { Args: { "p_channel": string,"p_url": string }; Returns: undefined
