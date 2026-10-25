@@ -1,0 +1,30 @@
+node_modules
+dist
+dist-ssr
+*.local
+.netlify
+
+# secrets
+.env
+.env.*
+!.env.example
+
+# sheet export, corrections and reconciliation reports (contain guest data)
+/import/
+
+# test output
+/test-results/
+/playwright-report/
+coverage
+
+# supabase local
+supabase/.branches
+supabase/.temp
+
+# editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db
+*.log
