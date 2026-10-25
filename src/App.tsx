@@ -1,4 +1,4 @@
-import { lazy } from 'react'
+import { lazy, Suspense } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import { Toaster } from 'sonner'
@@ -19,6 +19,10 @@ const MoneyPage = lazy(() => import('@/features/money/MoneyPage').then((m) => ({
 const ExpenseFormPage = lazy(() => import('@/features/money/ExpenseFormPage').then((m) => ({ default: m.ExpenseFormPage })))
 const TasksPage = lazy(() => import('@/features/tasks/TasksPage').then((m) => ({ default: m.TasksPage })))
 const AuditPage = lazy(() => import('@/features/settings/AuditPage').then((m) => ({ default: m.AuditPage })))
+const InquiriesPage = lazy(() => import('@/features/inquiries/InquiriesPage').then((m) => ({ default: m.InquiriesPage })))
+const QuoteFormPage = lazy(() => import('@/features/inquiries/QuoteFormPage').then((m) => ({ default: m.QuoteFormPage })))
+const QuoteViewPage = lazy(() => import('@/features/inquiries/QuoteViewPage').then((m) => ({ default: m.QuoteViewPage })))
+const PublicQuotePage = lazy(() => import('@/features/inquiries/PublicQuotePage').then((m) => ({ default: m.PublicQuotePage })))
 const PartnersPage = lazy(() => import('@/features/partners/PartnersPage').then((m) => ({ default: m.PartnersPage })))
 
 const queryClient = new QueryClient({
@@ -69,6 +73,10 @@ function Gate() {
         <Route path="money" element={<MoneyPage />} />
         <Route path="money/expenses/new" element={<ExpenseFormPage />} />
         <Route path="money/expenses/:id" element={<ExpenseFormPage />} />
+        <Route path="inquiries" element={<InquiriesPage />} />
+        <Route path="quotes/new" element={<QuoteFormPage />} />
+        <Route path="quotes/:id" element={<QuoteViewPage />} />
+        <Route path="quotes/:id/edit" element={<QuoteFormPage />} />
         <Route path="partners" element={<PartnersPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="settings/audit" element={<AuditPage />} />
@@ -83,7 +91,18 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BrowserRouter>
-          <Gate />
+          <Routes>
+            {/* guests open shared quotes without signing in */}
+            <Route
+              path="/q/:token"
+              element={
+                <Suspense fallback={null}>
+                  <PublicQuotePage />
+                </Suspense>
+              }
+            />
+            <Route path="*" element={<Gate />} />
+          </Routes>
         </BrowserRouter>
       </AuthProvider>
       <Toaster position="top-center" richColors />

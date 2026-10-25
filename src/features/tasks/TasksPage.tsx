@@ -69,7 +69,7 @@ export function TasksPage() {
   const mine = params.get('mine') === '1'
   const q = useTaskData()
   const members = useMembers(!isStaff)
-  const [editing, setEditing] = useState<Task | 'new' | null>(null)
+  const [editing, setEditing] = useState<Task | 'new' | null>(params.get('new') && !isStaff ? 'new' : null) // from quick-add
   const today = pkToday()
 
   const stayName = useMemo(() => {

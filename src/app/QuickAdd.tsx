@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router'
-import { BedDouble, CalendarX, Plus, Receipt, Wallet, X } from 'lucide-react'
+import { BedDouble, CalendarX, ListChecks, MessageSquareQuote, Plus, Receipt, Wallet, X } from 'lucide-react'
 import { useAuth } from './auth'
 import { cn } from '@/lib/utils'
 
-// Global "+" for the most common entries. Inquiries and tasks join in phase 2.
+// Global "+" for the most common entries.
 const ITEMS = [
   { to: '/bookings/new', label: 'Booking', icon: BedDouble },
+  { to: '/inquiries?new=1', label: 'Inquiry', icon: MessageSquareQuote },
+  { to: '/tasks?new=1', label: 'Task', icon: ListChecks },
   { to: '/money/expenses/new?kind=operating', label: 'Expense', icon: Receipt },
   { to: '/money?tab=incoming', label: 'Payment', icon: Wallet, hint: 'Pick the booking it belongs to' },
   { to: '/calendar', label: 'Block dates', icon: CalendarX, hint: 'Tap the dates on the calendar' },
@@ -38,7 +40,11 @@ export function QuickAdd() {
         <ul className="flex flex-col gap-1 rounded-xl border bg-card p-1 shadow-xl" role="menu">
           {ITEMS.map((it) => (
             <li key={it.label} role="none">
-              <Link role="menuitem" to={it.to} className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm hover:bg-muted">
+              <Link
+                role="menuitem"
+                to={it.to}
+                className="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm hover:bg-muted"
+              >
                 <it.icon className="size-4" aria-hidden />
                 <span>
                   {it.label}

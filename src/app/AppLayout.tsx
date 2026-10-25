@@ -2,7 +2,17 @@ import { Suspense } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { QuickAdd } from './QuickAdd'
-import { BedDouble, CalendarDays, ListChecks, LayoutDashboard, LogOut, Settings, Users, Wallet } from 'lucide-react'
+import {
+  BedDouble,
+  CalendarDays,
+  ListChecks,
+  LayoutDashboard,
+  LogOut,
+  MessageSquareQuote,
+  Settings,
+  Users,
+  Wallet,
+} from 'lucide-react'
 import { signOut, useAuth } from './auth'
 import { cn } from '@/lib/utils'
 import { Loading } from '@/components/common'
@@ -16,6 +26,7 @@ const NAV = [
   { to: '/money', label: 'Money', icon: Wallet, end: false },
 ]
 const MORE = [
+  { to: '/inquiries', label: 'Inquiries', icon: MessageSquareQuote, end: false },
   { to: '/partners', label: 'Partners', icon: Users, end: false },
   { to: '/settings', label: 'Settings', icon: Settings, end: false },
 ]
