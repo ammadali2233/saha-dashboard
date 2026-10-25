@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { QuickAdd } from './QuickAdd'
 import { BedDouble, CalendarDays, LayoutDashboard, LogOut, Settings, Users, Wallet } from 'lucide-react'
 import { signOut, useAuth } from './auth'
 import { cn } from '@/lib/utils'
@@ -44,7 +45,7 @@ export function AppLayout() {
         </div>
       </aside>
 
-      <div className="min-w-0 pb-20 md:pb-0">
+      <div className="min-w-0 pb-36 md:pb-20">
         <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur md:hidden">
           <span className="font-semibold">DHA Retreat</span>
           <div className="-mr-2 flex">
@@ -65,6 +66,7 @@ export function AppLayout() {
         </main>
       </div>
 
+      <QuickAdd />
       <nav
         aria-label="Main"
         className="fixed inset-x-0 bottom-0 z-10 grid grid-cols-5 border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
