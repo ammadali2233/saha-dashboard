@@ -41,7 +41,12 @@ test.beforeAll(() => {
 })
 
 test.afterAll(() => {
-  sql(`delete from public.bookings where guest_id in (select id from public.guests where name like 'E2E Guest %');`)
+  // auto-created tasks and payments reference the booking, so they go first
+  sql(`do $$ begin
+    delete from public.tasks where booking_id in (select b.id from public.bookings b join public.guests g on g.id = b.guest_id where g.name like 'E2E Guest %');
+    delete from public.payments where booking_id in (select b.id from public.bookings b join public.guests g on g.id = b.guest_id where g.name like 'E2E Guest %');
+    delete from public.bookings where guest_id in (select id from public.guests where name like 'E2E Guest %');
+  end $$;`)
 })
 
 test('sign in, add a booking, see it on the calendar', async ({ page }) => {
