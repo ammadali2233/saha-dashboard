@@ -4,6 +4,7 @@ create extension if not exists pgtap with schema extensions;
 select no_plan();
 
 -- ---------------------------------------------------------------- fixtures (as postgres, RLS bypassed)
+delete from public.app_users where email like '%@test.local'; -- local dev logins; rolled back at the end
 insert into public.app_users (email, display_name, role, active) values
   ('owner@test.local', 'Owner', 'owner', true),
   ('partner@test.local', 'Partner', 'partner', true),
