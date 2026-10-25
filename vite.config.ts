@@ -21,7 +21,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['src/**/*.test.ts', 'tests/unit/**/*.test.ts'],
+    include: ['src/**/*.test.ts', 'scripts/**/*.test.ts', 'tests/unit/**/*.test.ts'],
     environment: 'node',
   },
 })
