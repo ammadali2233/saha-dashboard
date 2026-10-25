@@ -16,6 +16,12 @@
     "db:types": "supabase gen types typescript --local > src/lib/database.types.ts"
   },
   "dependencies": {
+    "@fullcalendar/core": "^6.1.22",
+    "@fullcalendar/daygrid": "^6.1.22",
+    "@fullcalendar/interaction": "^6.1.22",
+    "@fullcalendar/list": "^6.1.22",
+    "@fullcalendar/react": "^6.1.22",
+    "@fullcalendar/timegrid": "^6.1.22",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-dialog": "^1.3.1",
     "@radix-ui/react-label": "^2.1.17",

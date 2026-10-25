@@ -1,0 +1,95 @@
+/* FullCalendar themed with the app's tokens (light and dark). */
+.fc {
+  --fc-border-color: var(--border);
+  --fc-page-bg-color: var(--card);
+  --fc-neutral-bg-color: var(--muted);
+  --fc-list-event-hover-bg-color: var(--muted);
+  --fc-today-bg-color: color-mix(in oklch, var(--accent) 35%, transparent);
+  --fc-button-bg-color: var(--card);
+  --fc-button-border-color: var(--border);
+  --fc-button-text-color: var(--foreground);
+  --fc-button-hover-bg-color: var(--muted);
+  --fc-button-hover-border-color: var(--border);
+  --fc-button-active-bg-color: var(--accent);
+  --fc-button-active-border-color: var(--border);
+  --fc-event-text-color: #fff;
+  font-size: 0.85rem;
+}
+.fc .fc-toolbar {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.fc .fc-toolbar-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+.fc .fc-button {
+  min-height: 2.5rem;
+  text-transform: none;
+}
+.fc .fc-daygrid-day-number,
+.fc .fc-col-header-cell-cushion {
+  color: var(--foreground);
+}
+.fc .fc-daygrid-day {
+  cursor: pointer;
+}
+.fc .fc-daygrid-event {
+  min-height: 1.5rem;
+  padding: 1px 4px;
+  cursor: pointer;
+}
+
+/* cancelled: faded strikethrough */
+.fc .fc-cancelled {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+/* owner/maintenance blocks and channel holds: hatched */
+.fc .fc-hatched,
+.fc .fc-hatched.fc-event {
+  background: repeating-linear-gradient(135deg, var(--muted), var(--muted) 6px, transparent 6px, transparent 12px);
+  border: 1px dashed var(--muted-foreground);
+  color: var(--foreground);
+}
+.fc .fc-hatched .fc-event-main {
+  color: var(--foreground);
+}
+/* iCal stubs waiting for details */
+.fc .fc-stub {
+  outline: 2px dashed #f59e0b;
+  outline-offset: -2px;
+}
+/* conflicts: red */
+.fc .fc-conflict {
+  outline: 2px solid var(--destructive);
+  outline-offset: -2px;
+}
+.fc .fc-conflict-bg {
+  background: color-mix(in oklch, var(--destructive) 30%, transparent);
+  opacity: 1;
+}
+/* small markers: turnovers, payouts, bills */
+.fc .fc-marker,
+.fc .fc-marker .fc-event-main {
+  background: transparent;
+  border: none;
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+}
+.fc .fc-marker-turnover,
+.fc .fc-marker-turnover .fc-event-main {
+  color: var(--primary);
+  font-weight: 600;
+}
+.fc .fc-marker-bill,
+.fc .fc-marker-bill .fc-event-main {
+  color: #b45309;
+}
+@media (max-width: 640px) {
+  .fc .fc-toolbar.fc-header-toolbar {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+}

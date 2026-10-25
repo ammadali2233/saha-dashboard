@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -72,6 +72,7 @@ const lineAmount = (qty: number, unit: number) => (toCents(qty) * toCents(unit))
 
 export function BookingFormPage() {
   const { id } = useParams()
+  const [search] = useSearchParams()
   const navigate = useNavigate()
   const existing = useBooking(id)
   const channels = useChannels()
@@ -89,8 +90,8 @@ export function BookingFormPage() {
       guest_phone: '',
       guest_email: '',
       ref: '',
-      check_in: '',
-      check_out: '',
+      check_in: search.get('check_in') ?? '', // from a calendar selection
+      check_out: search.get('check_out') ?? '',
       guest_count: '',
       booking_type: 'standard',
       status: 'confirmed',
