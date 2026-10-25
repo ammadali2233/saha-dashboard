@@ -608,7 +608,15 @@ isOneToOne: false
                 }
           }
           Views: {
-            "booking_financials": {
+            "alerts": {
+                  Row: {
+                    "alert_date": string | null,"booking_id": string | null,"detail": string | null,"kind": string | null,"link": string | null,"severity": string | null,"title": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                },"booking_financials": {
                   Row: {
                     "accommodation": number | null,"booked_at": string | null,"booking_id": string,"booking_type": Database["public"]['Enums']["booking_type"],"cancellation_reason": string | null,"cancelled_on": string | null,"channel_code": string,"channel_color": string,"channel_id": string,"channel_name": string,"check_in": string,"check_out": string,"currency": Database["public"]['Enums']["currency_code"] | null,"discounts": number | null,"fees": number | null,"gross": number | null,"guest_count": number | null,"guest_id": string | null,"guest_name": string | null,"guest_phone": string | null,"mixed_currency": boolean | null,"needs_details": boolean,"net": number | null,"net_pkr": number | null,"nights": number | null,"pkr_is_estimate": boolean | null,"pkr_rate": number | null,"platform_fee": number | null,"platform_fee_is_actual": boolean | null,"possibly_cancelled_at": string | null,"ref": string | null,"revenue_state": string | null,"source": Database["public"]['Enums']["record_source"],"status": Database["public"]['Enums']["booking_status"],"tax": number | null
                   }
@@ -784,6 +792,11 @@ isOneToOne: false
 "occupancy_stats":
 { Args: { "p_end": string,"p_exclude_nonstandard"?: boolean,"p_start": string }; Returns: {
               "available": number,"occupied": number,"rate": number
+            }[]
+                           },
+"overview_kpis":
+{ Args: { "p_exclude_nonstandard"?: boolean,"p_month"?: string }; Returns: {
+              "adr_has_estimates": boolean,"adr_this_pkr": number,"capital_recovered_pct": number,"deposits_held_pkr": number,"guest_balances_due_pkr": number,"month_start": string,"occ_next_available": number,"occ_next_occupied": number,"occ_next_rate": number,"occ_this_available": number,"occ_this_completed": number,"occ_this_occupied": number,"occ_this_rate": number,"on_the_books_has_estimates": boolean,"on_the_books_pkr": number,"opex_mtd_pkr": number,"pending_payouts_count": number,"pending_payouts_pkr_est": number,"project_balance_pkr": number,"realized_mtd_pkr": number,"realized_net_profit_pkr": number,"realized_to_date_pkr": number,"total_invested_pkr": number
             }[]
                            },
 "pk_today":
