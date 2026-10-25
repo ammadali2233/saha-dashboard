@@ -32,6 +32,7 @@ where name = 'Full Name';
 To remove access: `update public.app_users set active = false where email = '…';`
 
 ## Deployment
+First-time account setup (Supabase, GitHub, Netlify, Google sign-in): [docs/SETUP.md](docs/SETUP.md).
 - GitHub `main` → Netlify production; pull requests get deploy previews. Build settings are in `netlify.toml`.
 - Netlify env vars: see `.env.example`. `SUPABASE_SERVICE_ROLE_KEY` is for functions only, never `VITE_`-prefixed.
 - Database changes: `npx supabase link --project-ref <ref>` once, then `npx supabase db push` to apply new migrations.
