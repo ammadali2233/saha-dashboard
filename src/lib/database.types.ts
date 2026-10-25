@@ -777,6 +777,12 @@ isOneToOne: false
 "format_pk_date":
 { Args: { "d": string }; Returns: string
                            },
+"generate_booking_tasks":
+{ Args: { "p_booking": string }; Returns: number
+                           },
+"generate_recurring_expenses":
+{ Args: { "p_today"?: string }; Returns: number
+                           },
 "hook_before_user_created":
 { Args: { "event": Json }; Returns: Json
                            },
@@ -801,6 +807,9 @@ isOneToOne: false
                            },
 "pk_today":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"roll_forward":
+{ Args: { "p_today"?: string }; Returns: Json
                            },
 "save_booking":
 { Args: { "p_booking": Json,"p_guest"?: Json,"p_lines": Json }; Returns: string

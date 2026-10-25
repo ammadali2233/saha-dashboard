@@ -86,7 +86,7 @@ select is((select count(*) from public.guests), 0::bigint, 'staff cannot read gu
 select is((select guest_name || '|' || guest_phone || '|' || checkin_notes from public.staff_calendar where item_type = 'booking'),
   'Test Guest|+92 300 0000000|Arriving late', 'staff sees guest name, phone and check-in notes');
 select hasnt_column('public', 'staff_calendar', 'notes', 'staff_calendar exposes no free-form booking notes');
-select is((select count(*) from public.tasks), 1::bigint, 'staff sees tasks');
+select is((select count(*) from public.tasks), 3::bigint, 'staff sees tasks (1 manual + 2 auto-created for the booking)');
 select lives_ok($$ update public.tasks set status = 'done' where id = '33333333-0000-0000-0000-000000000001' $$, 'staff can update a task');
 select throws_ok($$ insert into public.expenses (expense_date, kind, category, item, amount, paid_date)
   values ('2026-10-25', 'operating', 'Cleaning', 'x', 1, '2026-10-25') $$, '42501', null, 'staff cannot insert expenses');
