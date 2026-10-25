@@ -7,6 +7,9 @@ truncate public.bookings, public.booking_lines, public.payments, public.calendar
   public.expenses, public.capital_movements, public.tasks, public.inquiries, public.quotes, public.quote_lines,
   public.doc_counters, public.sync_runs cascade;
 
+-- fixed "today": 15 Oct 2026 in Karachi (rolled back with the transaction)
+create or replace function public.pk_today() returns date language sql stable set search_path = '' as $$ select '2026-10-15'::date $$;
+
 insert into public.bookings (id, channel_id, check_in, check_out, status, source)
 select '22222222-0000-0000-0000-000000000001', id, '2026-11-10', '2026-11-13', 'confirmed', 'manual'
 from public.channels where code = 'direct';

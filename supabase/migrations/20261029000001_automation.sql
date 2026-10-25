@@ -42,7 +42,7 @@ begin
     ('booking:' || p_booking || ':deposit', 'Inspect and refund the security deposit',
        b.check_out + 1, 'turnover', 'Record the refund, or what is withheld, as payments on the booking.', v_deposit or v_direct)
   ) as x(k, t, d, c, n, wanted)
-  where wanted
+  where wanted and d >= public.pk_today() -- never create backdated tasks for stays already under way
   on conflict (auto_key) do update
     set due_date = excluded.due_date, deleted_at = null
     where public.tasks.status = 'todo';
