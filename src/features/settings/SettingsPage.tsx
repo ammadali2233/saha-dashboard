@@ -14,6 +14,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Field, Select } from '@/components/ui/form-controls'
 import { Input } from '@/components/ui/input'
 import { formatDate, formatTimestamp } from '@/domain/format'
+import { IcalSettings } from './IcalSettings'
 
 // ---------------------------------------------------------------- a small generic edit dialog
 type FieldDef = {
@@ -128,6 +129,7 @@ export function SettingsPage() {
       <PropertyCard owner={owner} />
       <RecurringCard owner={owner} />
       <ChannelsCard owner={owner} />
+      <IcalSettings owner={owner} />
       <AutomationCard owner={owner} />
       <PeopleCard owner={owner} />
       <Card>
