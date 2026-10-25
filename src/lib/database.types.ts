@@ -766,6 +766,9 @@ isOneToOne: false
               "display_name": string,"email": string,"id": string,"role": Database["public"]['Enums']["app_role"]
             }[]
                            },
+"ensure_payment_schedule":
+{ Args: { "p_booking": string }; Returns: undefined
+                           },
 "expense_pkr":
 { Args: { "p_amount": number,"p_currency": Database["public"]['Enums']["currency_code"] }; Returns: number
                            },
@@ -813,6 +816,9 @@ isOneToOne: false
                            },
 "save_booking":
 { Args: { "p_booking": Json,"p_guest"?: Json,"p_lines": Json }; Returns: string
+                           },
+"set_channel_ical_url":
+{ Args: { "p_channel": string,"p_url": string }; Returns: undefined
                            },
 "track_table":
 { Args: { "p_table": unknown }; Returns: undefined
