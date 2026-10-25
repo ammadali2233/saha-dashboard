@@ -1,8 +1,11 @@
 import { useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router'
+import { useQuery } from '@tanstack/react-query'
 import { Paperclip, Plus } from 'lucide-react'
 import { useExpenses, useLedger, useVendorBalances } from './api'
-import { usePartners } from '@/lib/queries'
+import { unwrap, usePartners } from '@/lib/queries'
+import { supabase } from '@/lib/supabase'
+import { PAYMENT_KIND_LABELS, type PaymentKind } from '@/domain/payments'
 import { EmptyState, ErrorNote, Loading, Money, PageHeader, Stat, StatusBadge } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -11,6 +14,7 @@ import { formatDate, pkToday } from '@/domain/format'
 import { cn } from '@/lib/utils'
 
 const TABS = [
+  ['incoming', 'Incoming'],
   ['operating', 'Operating'],
   ['setup', 'Setup costs'],
   ['account', 'Project account'],
@@ -49,6 +53,7 @@ export function MoneyPage() {
           </button>
         ))}
       </div>
+      {tab === 'incoming' && <IncomingTab />}
       {tab === 'operating' && <OperatingTab />}
       {tab === 'setup' && <SetupTab />}
       {tab === 'account' && <AccountTab />}
@@ -59,6 +64,98 @@ export function MoneyPage() {
 function usePartnerName() {
   const partners = usePartners()
   return (id: string | null) => (id ? (partners.data?.find((p) => p.id === id)?.name ?? 'Partner') : 'Project account')
+}
+
+const SHOW = {
+  payouts: { label: 'Platform payouts', kinds: ['airbnb_payout', 'booking_com_payout'] },
+  guests: { label: 'Direct guests', kinds: ['advance', 'balance', 'full'] },
+  deposits: { label: 'Deposits', kinds: ['deposit_in', 'deposit_refund', 'deposit_withheld'] },
+} as const
+
+/** Money not yet in the project account: scheduled/due payments, and payouts held by a partner. */
+function IncomingTab() {
+  const [params, setParams] = useSearchParams()
+  const show = (params.get('show') as keyof typeof SHOW | null) ?? null
+  const partnerName = usePartnerName()
+  const q = useQuery({
+    queryKey: ['incoming'],
+    queryFn: async () =>
+      unwrap(
+        await supabase
+          .from('payment_facts')
+          .select('id, booking_id, kind, currency, amount_due, due_date, status, amount_received, received_date, received_by_partner_id, held_by_partner, bookings(ref, status, check_out, guests(name))')
+          .order('due_date', { ascending: true, nullsFirst: false }),
+      ),
+  })
+  const today = pkToday()
+  const rows = (q.data ?? []).filter((p) => {
+    const b = p.bookings
+    if (!b || ['cancelled', 'no_show', 'fraud'].includes(b.status)) return false
+    if (show && !(SHOW[show].kinds as readonly string[]).includes(p.kind!)) return false
+    // deposits: every movement (collected, to collect, refunded, withheld) so the "held" figure can be traced
+    if ((SHOW.deposits.kinds as readonly string[]).includes(p.kind!)) return p.status !== 'waived'
+    return p.held_by_partner || !['received', 'waived'].includes(p.status!)
+  })
+  const deposits = show === 'deposits'
+
+  if (q.isPending) return <Loading />
+  return (
+    <div className="flex flex-col gap-4">
+      <ErrorNote error={q.error} />
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant={show ? 'outline' : 'secondary'} onClick={() => setParams({ tab: 'incoming' }, { replace: true })}>
+          All
+        </Button>
+        {Object.entries(SHOW).map(([k, v]) => (
+          <Button
+            key={k}
+            size="sm"
+            variant={show === k ? 'secondary' : 'outline'}
+            onClick={() => setParams({ tab: 'incoming', show: k }, { replace: true })}
+          >
+            {v.label}
+          </Button>
+        ))}
+      </div>
+      {deposits && (
+        <p className="text-sm text-muted-foreground">
+          Deposits are refundable and never revenue. Received ones are held until refunded or withheld.
+        </p>
+      )}
+      {rows.length === 0 ? (
+        <EmptyState title="Nothing outstanding" />
+      ) : (
+        <ul className="divide-y rounded-lg border bg-card text-sm">
+          {rows.map((p) => {
+            const overdue = !p.held_by_partner && p.status !== 'received' && p.due_date && p.due_date < today
+            return (
+              <li key={p.id}>
+                <Link to={`/bookings/${p.booking_id}`} className="flex justify-between gap-3 p-3 hover:bg-muted/50">
+                  <span className="min-w-0">
+                    <span className="font-medium">{p.bookings?.guests?.name ?? p.bookings?.ref ?? 'Booking'}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {PAYMENT_KIND_LABELS[p.kind as PaymentKind]}
+                      {p.held_by_partner
+                        ? ` · held by ${partnerName(p.received_by_partner_id)} since ${formatDate(p.received_date!)}`
+                        : p.status === 'received' && p.received_date
+                          ? ` · received ${formatDate(p.received_date)}`
+                          : p.due_date
+                            ? ` · due ${formatDate(p.due_date)}`
+                            : ''}
+                    </span>
+                  </span>
+                  <span className={cn('text-right', overdue && 'text-destructive')}>
+                    <Money amount={p.status === 'received' ? p.amount_received : p.amount_due} currency={p.currency as 'PKR' | 'USD'} />
+                    {overdue && <span className="block text-xs">overdue</span>}
+                  </span>
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </div>
+  )
 }
 
 function OperatingTab() {
