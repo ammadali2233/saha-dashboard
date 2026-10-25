@@ -34,6 +34,15 @@ export function LoginPage() {
     setSentTo(email)
   }
 
+  async function signInWithGoogle() {
+    setError(null)
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin },
+    })
+    if (error) setError(error.message)
+  }
+
   return (
     <main className="flex min-h-dvh items-center justify-center p-4">
       <Card className="w-full max-w-sm">
@@ -54,30 +63,40 @@ export function LoginPage() {
               </Button>
             </div>
           ) : (
-            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  autoComplete="email"
-                  inputMode="email"
-                  aria-invalid={!!form.formState.errors.email}
-                  {...form.register('email')}
-                />
-                {form.formState.errors.email && (
-                  <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
-                )}
-              </div>
-              {error && (
-                <p className="text-sm text-destructive" role="alert">
-                  {error}
-                </p>
-              )}
-              <Button type="submit" size="lg" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Sending…' : 'Email me a sign-in link'}
+            <div className="flex flex-col gap-4">
+              <Button type="button" size="lg" onClick={signInWithGoogle}>
+                Continue with Google
               </Button>
-            </form>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span className="h-px flex-1 bg-border" />
+                or get an email link
+                <span className="h-px flex-1 bg-border" />
+              </div>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    autoComplete="email"
+                    inputMode="email"
+                    aria-invalid={!!form.formState.errors.email}
+                    {...form.register('email')}
+                  />
+                  {form.formState.errors.email && (
+                    <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
+                  )}
+                </div>
+                {error && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {error}
+                  </p>
+                )}
+                <Button type="submit" size="lg" variant="outline" disabled={form.formState.isSubmitting}>
+                  {form.formState.isSubmitting ? 'Sending…' : 'Email me a sign-in link'}
+                </Button>
+              </form>
+            </div>
           )}
         </CardContent>
       </Card>
