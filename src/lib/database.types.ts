@@ -81,8 +81,20 @@ export type Database = {
       foreignKeyName: "booking_lines_booking_id_fkey"
       columns: ["booking_id"]
 isOneToOne: false
+      referencedRelation: "booking_financials"
+      referencedColumns: ["booking_id"]
+    },{
+      foreignKeyName: "booking_lines_booking_id_fkey"
+      columns: ["booking_id"]
+isOneToOne: false
       referencedRelation: "bookings"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "booking_lines_booking_id_fkey"
+      columns: ["booking_id"]
+isOneToOne: false
+      referencedRelation: "nightly_allocation"
+      referencedColumns: ["booking_id"]
     }
                   ]
                 },"bookings": {
@@ -144,6 +156,12 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
+      foreignKeyName: "capital_movements_partner_id_fkey"
+      columns: ["partner_id"]
+isOneToOne: false
+      referencedRelation: "partner_capital"
+      referencedColumns: ["partner_id"]
+    },{
       foreignKeyName: "capital_movements_partner_id_fkey"
       columns: ["partner_id"]
 isOneToOne: false
@@ -229,8 +247,26 @@ isOneToOne: true
       foreignKeyName: "expenses_booking_id_fkey"
       columns: ["booking_id"]
 isOneToOne: false
+      referencedRelation: "booking_financials"
+      referencedColumns: ["booking_id"]
+    },{
+      foreignKeyName: "expenses_booking_id_fkey"
+      columns: ["booking_id"]
+isOneToOne: false
       referencedRelation: "bookings"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "expenses_booking_id_fkey"
+      columns: ["booking_id"]
+isOneToOne: false
+      referencedRelation: "nightly_allocation"
+      referencedColumns: ["booking_id"]
+    },{
+      foreignKeyName: "expenses_paid_by_partner_id_fkey"
+      columns: ["paid_by_partner_id"]
+isOneToOne: false
+      referencedRelation: "partner_capital"
+      referencedColumns: ["partner_id"]
     },{
       foreignKeyName: "expenses_paid_by_partner_id_fkey"
       columns: ["paid_by_partner_id"]
@@ -243,6 +279,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "recurring_expenses"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "expenses_vendor_quote_id_fkey"
+      columns: ["vendor_quote_id"]
+isOneToOne: false
+      referencedRelation: "vendor_balances"
+      referencedColumns: ["vendor_quote_id"]
     },{
       foreignKeyName: "expenses_vendor_quote_id_fkey"
       columns: ["vendor_quote_id"]
@@ -295,8 +337,20 @@ isOneToOne: false
       foreignKeyName: "inquiries_booking_id_fkey"
       columns: ["booking_id"]
 isOneToOne: false
+      referencedRelation: "booking_financials"
+      referencedColumns: ["booking_id"]
+    },{
+      foreignKeyName: "inquiries_booking_id_fkey"
+      columns: ["booking_id"]
+isOneToOne: false
       referencedRelation: "bookings"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "inquiries_booking_id_fkey"
+      columns: ["booking_id"]
+isOneToOne: false
+      referencedRelation: "nightly_allocation"
+      referencedColumns: ["booking_id"]
     },{
       foreignKeyName: "inquiries_channel_id_fkey"
       columns: ["channel_id"]
@@ -353,8 +407,26 @@ isOneToOne: false
       foreignKeyName: "payments_booking_id_fkey"
       columns: ["booking_id"]
 isOneToOne: false
+      referencedRelation: "booking_financials"
+      referencedColumns: ["booking_id"]
+    },{
+      foreignKeyName: "payments_booking_id_fkey"
+      columns: ["booking_id"]
+isOneToOne: false
       referencedRelation: "bookings"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "payments_booking_id_fkey"
+      columns: ["booking_id"]
+isOneToOne: false
+      referencedRelation: "nightly_allocation"
+      referencedColumns: ["booking_id"]
+    },{
+      foreignKeyName: "payments_received_by_partner_id_fkey"
+      columns: ["received_by_partner_id"]
+isOneToOne: false
+      referencedRelation: "partner_capital"
+      referencedColumns: ["partner_id"]
     },{
       foreignKeyName: "payments_received_by_partner_id_fkey"
       columns: ["received_by_partner_id"]
@@ -399,8 +471,20 @@ isOneToOne: false
       foreignKeyName: "quotes_booking_id_fkey"
       columns: ["booking_id"]
 isOneToOne: false
+      referencedRelation: "booking_financials"
+      referencedColumns: ["booking_id"]
+    },{
+      foreignKeyName: "quotes_booking_id_fkey"
+      columns: ["booking_id"]
+isOneToOne: false
       referencedRelation: "bookings"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "quotes_booking_id_fkey"
+      columns: ["booking_id"]
+isOneToOne: false
+      referencedRelation: "nightly_allocation"
+      referencedColumns: ["booking_id"]
     },{
       foreignKeyName: "quotes_guest_id_fkey"
       columns: ["guest_id"]
@@ -428,6 +512,12 @@ isOneToOne: false
                   }
                   Relationships: [
                     {
+      foreignKeyName: "recurring_expenses_default_paid_by_partner_id_fkey"
+      columns: ["default_paid_by_partner_id"]
+isOneToOne: false
+      referencedRelation: "partner_capital"
+      referencedColumns: ["partner_id"]
+    },{
       foreignKeyName: "recurring_expenses_default_paid_by_partner_id_fkey"
       columns: ["default_paid_by_partner_id"]
 isOneToOne: false
@@ -485,8 +575,20 @@ isOneToOne: false
       foreignKeyName: "tasks_booking_id_fkey"
       columns: ["booking_id"]
 isOneToOne: false
+      referencedRelation: "booking_financials"
+      referencedColumns: ["booking_id"]
+    },{
+      foreignKeyName: "tasks_booking_id_fkey"
+      columns: ["booking_id"]
+isOneToOne: false
       referencedRelation: "bookings"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "tasks_booking_id_fkey"
+      columns: ["booking_id"]
+isOneToOne: false
+      referencedRelation: "nightly_allocation"
+      referencedColumns: ["booking_id"]
     }
                   ]
                 },"vendor_quotes": {
@@ -506,9 +608,137 @@ isOneToOne: false
                 }
           }
           Views: {
-            "staff_calendar": {
+            "booking_financials": {
+                  Row: {
+                    "accommodation": number | null,"booked_at": string | null,"booking_id": string,"booking_type": Database["public"]['Enums']["booking_type"],"cancellation_reason": string | null,"cancelled_on": string | null,"channel_code": string,"channel_color": string,"channel_id": string,"channel_name": string,"check_in": string,"check_out": string,"currency": Database["public"]['Enums']["currency_code"] | null,"discounts": number | null,"fees": number | null,"gross": number | null,"guest_count": number | null,"guest_id": string | null,"guest_name": string | null,"guest_phone": string | null,"mixed_currency": boolean | null,"needs_details": boolean,"net": number | null,"net_pkr": number | null,"nights": number | null,"pkr_is_estimate": boolean | null,"pkr_rate": number | null,"platform_fee": number | null,"platform_fee_is_actual": boolean | null,"possibly_cancelled_at": string | null,"ref": string | null,"revenue_state": string | null,"source": Database["public"]['Enums']["record_source"],"status": Database["public"]['Enums']["booking_status"],"tax": number | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    {
+      foreignKeyName: "bookings_channel_id_fkey"
+      columns: ["channel_id"]
+isOneToOne: false
+      referencedRelation: "channels"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "bookings_guest_id_fkey"
+      columns: ["guest_id"]
+isOneToOne: false
+      referencedRelation: "guests"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"calendar_conflicts": {
+                  Row: {
+                    "a_id": string | null,"a_type": string | null,"b_id": string | null,"b_type": string | null,"end_date": string | null,"start_date": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                },"monthly_pnl_accrual": {
+                  Row: {
+                    "booked_revenue_pkr": number | null,"earned_revenue_pkr": number | null,"has_estimates": boolean | null,"month": string | null,"net_profit_pkr": number | null,"nights": number | null,"nights_earned": number | null,"operating_expenses_pkr": number | null,"other_revenue_pkr": number | null,"stay_revenue_pkr": number | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                },"monthly_pnl_cash": {
+                  Row: {
+                    "month": string | null,"net_profit_pkr": number | null,"paid_operating_pkr": number | null,"realized_revenue_pkr": number | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                },"nightly_allocation": {
+                  Row: {
+                    "accommodation": number | null,"booking_id": string,"booking_type": Database["public"]['Enums']["booking_type"],"channel_id": string,"currency": Database["public"]['Enums']["currency_code"] | null,"discounts": number | null,"fees": number | null,"month": string | null,"net": number | null,"net_pkr": number | null,"night": string | null,"pkr_is_estimate": boolean | null,"platform_fee": number | null,"revenue_state": string | null,"status": Database["public"]['Enums']["booking_status"]
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    {
+      foreignKeyName: "bookings_channel_id_fkey"
+      columns: ["channel_id"]
+isOneToOne: false
+      referencedRelation: "channels"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"occupancy_daily": {
+                  Row: {
+                    "blocked": boolean | null,"day": string | null,"occupied_nonstandard": boolean | null,"occupied_standard": boolean | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                },"partner_capital": {
+                  Row: {
+                    "agreed_share_pct": number,"capital_pct": number | null,"capital_recovered_pct": number | null,"capital_returned": number | null,"cash_contributed": number | null,"distributions": number | null,"email": string | null,"name": string,"partner_id": string,"profit_share": number | null,"realized_net_profit": number | null,"reimbursements_owed": number | null,"setup_paid_personally": number | null,"shortfall_to_equal": number | null,"sort_order": number,"total_invested": number | null,"undistributed": number | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                },"payment_facts": {
+                  Row: {
+                    "amount_due": number | null,"amount_received": number | null,"booking_id": string | null,"cash_sign": number | null,"created_at": string,"created_by": string | null,"currency": Database["public"]['Enums']["currency_code"],"deleted_at": string | null,"due_date": string | null,"external_ref": string | null,"forwarded_date": string | null,"fx_rate": number | null,"held_by_partner": boolean | null,"id": string,"import_key": string | null,"is_estimate": boolean,"kind": Database["public"]['Enums']["payment_kind"],"method": Database["public"]['Enums']["payment_method"] | null,"notes": string | null,"pkr_received": number | null,"proof_path": string | null,"realized_date": string | null,"realized_pkr": number | null,"received_by_partner_id": string | null,"received_date": string | null,"revenue_sign": number | null,"status": Database["public"]['Enums']["payment_status"],"updated_at": string,"updated_by": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    {
+      foreignKeyName: "payments_booking_id_fkey"
+      columns: ["booking_id"]
+isOneToOne: false
+      referencedRelation: "booking_financials"
+      referencedColumns: ["booking_id"]
+    },{
+      foreignKeyName: "payments_booking_id_fkey"
+      columns: ["booking_id"]
+isOneToOne: false
+      referencedRelation: "bookings"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "payments_booking_id_fkey"
+      columns: ["booking_id"]
+isOneToOne: false
+      referencedRelation: "nightly_allocation"
+      referencedColumns: ["booking_id"]
+    },{
+      foreignKeyName: "payments_received_by_partner_id_fkey"
+      columns: ["received_by_partner_id"]
+isOneToOne: false
+      referencedRelation: "partner_capital"
+      referencedColumns: ["partner_id"]
+    },{
+      foreignKeyName: "payments_received_by_partner_id_fkey"
+      columns: ["received_by_partner_id"]
+isOneToOne: false
+      referencedRelation: "partners"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"project_account_ledger": {
+                  Row: {
+                    "amount": number | null,"balance": number | null,"description": string | null,"entry_date": string | null,"kind": string | null,"source_id": string | null,"source_table": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                },"staff_calendar": {
                   Row: {
                     "channel_name": string | null,"checkin_notes": string | null,"color": string | null,"end_date": string | null,"guest_count": number | null,"guest_name": string | null,"guest_phone": string | null,"id": string | null,"item_type": string | null,"nights": number | null,"start_date": string | null,"status": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                },"vendor_balances": {
+                  Row: {
+                    "currency": Database["public"]['Enums']["currency_code"],"description": string | null,"paid": number | null,"quoted_amount": number,"remaining": number | null,"vendor": string,"vendor_quote_id": string
                   }
                   ComputedFields: never
                   Relationships: [
@@ -527,6 +757,9 @@ isOneToOne: false
 { Args: Record<PropertyKey, never>; Returns: {
               "display_name": string,"email": string,"id": string,"role": Database["public"]['Enums']["app_role"]
             }[]
+                           },
+"expense_pkr":
+{ Args: { "p_amount": number,"p_currency": Database["public"]['Enums']["currency_code"] }; Returns: number
                            },
 "find_conflicts":
 { Args: { "p_end": string,"p_exclude_block"?: string,"p_exclude_booking"?: string,"p_start": string }; Returns: {
@@ -548,8 +781,16 @@ isOneToOne: false
 "next_doc_number":
 { Args: { "p_prefix": string,"p_year"?: number }; Returns: string
                            },
+"occupancy_stats":
+{ Args: { "p_end": string,"p_exclude_nonstandard"?: boolean,"p_start": string }; Returns: {
+              "available": number,"occupied": number,"rate": number
+            }[]
+                           },
 "pk_today":
 { Args: Record<PropertyKey, never>; Returns: string
+                           },
+"save_booking":
+{ Args: { "p_booking": Json,"p_guest"?: Json,"p_lines": Json }; Returns: string
                            },
 "track_table":
 { Args: { "p_table": unknown }; Returns: undefined
