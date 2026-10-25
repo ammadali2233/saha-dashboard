@@ -14,7 +14,7 @@ npm run dev
 
 Sign-in emails locally land in Mailpit: http://127.0.0.1:55324. To let yourself in locally, add your email to the allowlist (next section) against the local DB (`postgresql://postgres:postgres@127.0.0.1:55322/postgres`).
 
-Tests: `npm test` (domain logic), `npm run db:test` (RLS and integrity), `npm run build`.
+Tests: `npm test` (domain logic and import), `npm run db:test` (RLS, views, overview), `npm run test:e2e` (Playwright smoke: sign in, add a booking, see it on the calendar), `npm run build`.
 
 ## How to add a partner (or caretaker)
 Only emails on the allowlist can sign in. In the Supabase dashboard → SQL Editor:

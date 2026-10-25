@@ -14,6 +14,8 @@ npm run db:test        # pgTAP: RLS per role, integrity rules, view golden value
 npm run db:types       # regenerate src/lib/database.types.ts after a migration
 npm test               # Vitest: src/domain money/allocation/occupancy logic
 npm run build          # tsc -b && vite build
+npm run test:e2e       # Playwright smoke (needs db:start; reads sign-in mail from Mailpit on :55324)
+npx tsx scripts/import-sheet/index.ts [--target linked] [--apply]   # sheet import, see README
 npm run lint
 ```
 
@@ -50,13 +52,15 @@ npm run lint
 15. **Capital recovered %** = (distributions + undistributed realized profit) / total invested. Payback projection from trailing 3-month realized profit.
 16. **Display.** Dates `25 Oct 2026`; timezone Asia/Karachi everywhere (UTC+5, no DST; server runs UTC: use `pk_today()` in SQL and `pkToday()` in TS). Amounts `PKR 150,000` and `$40.00` (`src/domain/format.ts`).
 
-## Interpretations (Phase 1b; confirm or change with Ammad)
+## Interpretations (confirm or change with Ammad)
 - Platform fee % applies to gross (accommodation + fees) before discounts, as rule 2 states.
 - Tax lines are pass-through: shown, but not in gross, net or revenue.
 - Occupancy: owner-use and maintenance nights are removed from available nights. With the rule 7 filter on, partner/promotional nights are removed from both occupied and available.
 - Direct schedule: advance % and deposit % are of the booking's net total.
 - Capital returns leave the project account like distributions. Deposits pass through the ledger (in at check-in, out on refund) so bank reconciliation matches; withheld deposits move no cash.
 - Expenses in USD (rare) convert at `settings.default_usd_pkr`.
+- Overview: occupancy, completed nights and ADR count nights from go-live (5 Oct 2026). "Operating costs this month" is by expense date (incurred), the cash P&L uses paid date.
+- Performance budget: keep form/schema libraries, FullCalendar and date libraries out of the first load (lazy routes, `manualChunks`); the sign-in page must stay above 90 on Lighthouse mobile.
 
 ## Hard constraints
 - No Airbnb API for individual hosts. Never scrape, log into, or automate airbnb.com. Automation = iCal feeds, Airbnb transaction CSV export, manual entry.
