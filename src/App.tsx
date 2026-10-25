@@ -17,6 +17,8 @@ const BookingDetailPage = lazy(() =>
 const BookingFormPage = lazy(() => import('@/features/bookings/BookingFormPage').then((m) => ({ default: m.BookingFormPage })))
 const MoneyPage = lazy(() => import('@/features/money/MoneyPage').then((m) => ({ default: m.MoneyPage })))
 const ExpenseFormPage = lazy(() => import('@/features/money/ExpenseFormPage').then((m) => ({ default: m.ExpenseFormPage })))
+const TasksPage = lazy(() => import('@/features/tasks/TasksPage').then((m) => ({ default: m.TasksPage })))
+const AuditPage = lazy(() => import('@/features/settings/AuditPage').then((m) => ({ default: m.AuditPage })))
 const PartnersPage = lazy(() => import('@/features/partners/PartnersPage').then((m) => ({ default: m.PartnersPage })))
 
 const queryClient = new QueryClient({
@@ -42,10 +44,23 @@ function Gate() {
       </main>
     )
   }
+  if (member.role === 'staff') {
+    // caretaker: calendar and tasks only; financial routes do not exist for them
+    return (
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route path="calendar" element={<CalendarPage />} />
+          <Route path="tasks" element={<TasksPage />} />
+          <Route path="*" element={<Navigate to="/tasks" replace />} />
+        </Route>
+      </Routes>
+    )
+  }
   return (
     <Routes>
       <Route element={<AppLayout />}>
         <Route index element={<OverviewPage />} />
+        <Route path="tasks" element={<TasksPage />} />
         <Route path="calendar" element={<CalendarPage />} />
         <Route path="bookings" element={<BookingsPage />} />
         <Route path="bookings/new" element={<BookingFormPage />} />
@@ -56,6 +71,7 @@ function Gate() {
         <Route path="money/expenses/:id" element={<ExpenseFormPage />} />
         <Route path="partners" element={<PartnersPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="settings/audit" element={<AuditPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

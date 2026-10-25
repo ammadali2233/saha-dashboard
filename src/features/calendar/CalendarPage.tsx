@@ -9,6 +9,7 @@ import type { DateSelectArg, EventClickArg, EventInput } from '@fullcalendar/cor
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { unwrap, useChannels } from '@/lib/queries'
+import { useAuth } from '@/app/auth'
 import { ErrorNote, Money, PageHeader, StatusBadge } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
@@ -28,42 +29,91 @@ const LAYERS = [
 ] as const
 type Layer = (typeof LAYERS)[number][0]
 
-function useCalendarData() {
+function useCalendarData(staff: boolean) {
   return useQuery({
-    queryKey: ['calendar'],
-    queryFn: async () => {
-      const [bookings, blocks, conflicts, payouts, bills] = await Promise.all([
-        supabase
-          .from('booking_financials')
-          .select('booking_id, guest_name, ref, channel_id, channel_name, channel_color, check_in, check_out, nights, status, booking_type, needs_details, net, currency, net_pkr, pkr_is_estimate, guest_phone'),
-        supabase.from('calendar_blocks').select('id, start_date, end_date, reason, source, notes, channel_id').is('deleted_at', null),
-        supabase.from('calendar_conflicts').select('*'),
-        supabase
-          .from('payments')
-          .select('id, booking_id, kind, due_date, amount_due, currency, status')
-          .is('deleted_at', null)
-          .in('kind', ['airbnb_payout', 'booking_com_payout'])
-          .not('status', 'in', '(received,waived)'),
-        supabase.from('expenses').select('id, expense_date, item, category, amount').is('deleted_at', null).eq('status', 'due'),
-      ])
-      return {
-        bookings: unwrap(bookings),
-        blocks: unwrap(blocks),
-        conflicts: unwrap(conflicts),
-        payouts: unwrap(payouts),
-        bills: unwrap(bills),
-      }
-    },
+    queryKey: ['calendar', staff],
+    queryFn: () => (staff ? staffCalendar() : fullCalendarData()),
   })
 }
 
+async function fullCalendarData() {
+  const [bookings, blocks, conflicts, payouts, bills] = await Promise.all([
+    supabase
+      .from('booking_financials')
+      .select(
+        'booking_id, guest_name, ref, channel_id, channel_name, channel_color, check_in, check_out, nights, status, booking_type, needs_details, net, currency, net_pkr, pkr_is_estimate, guest_phone',
+      ),
+    supabase.from('calendar_blocks').select('id, start_date, end_date, reason, source, notes, channel_id').is('deleted_at', null),
+    supabase.from('calendar_conflicts').select('*'),
+    supabase
+      .from('payments')
+      .select('id, booking_id, kind, due_date, amount_due, currency, status')
+      .is('deleted_at', null)
+      .in('kind', ['airbnb_payout', 'booking_com_payout'])
+      .not('status', 'in', '(received,waived)'),
+    supabase.from('expenses').select('id, expense_date, item, category, amount').is('deleted_at', null).eq('status', 'due'),
+  ])
+  return {
+    bookings: unwrap(bookings),
+    blocks: unwrap(blocks),
+    conflicts: unwrap(conflicts),
+    payouts: unwrap(payouts),
+    bills: unwrap(bills),
+  }
+}
+
 type Data = NonNullable<ReturnType<typeof useCalendarData>['data']>
+
+// Staff read only the staff_calendar view: dates, guest name, phone, check-in notes. No money.
+async function staffCalendar() {
+  const rows = unwrap(await supabase.from('staff_calendar').select('*'))
+  return {
+    bookings: rows
+      .filter((r) => r.item_type === 'booking')
+      .map((r) => ({
+        booking_id: r.id,
+        guest_name: r.guest_name,
+        ref: null,
+        channel_id: null,
+        channel_name: r.channel_name,
+        channel_color: r.color,
+        check_in: r.start_date,
+        check_out: r.end_date,
+        nights: r.nights,
+        status: r.status,
+        booking_type: null,
+        needs_details: false,
+        net: null,
+        currency: null,
+        net_pkr: null,
+        pkr_is_estimate: null,
+        guest_phone: r.guest_phone,
+        checkin_notes: r.checkin_notes,
+      })) as unknown as Awaited<ReturnType<typeof fullCalendarData>>['bookings'],
+    blocks: rows
+      .filter((r) => r.item_type === 'block')
+      .map((r) => ({
+        id: r.id!,
+        start_date: r.start_date!,
+        end_date: r.end_date!,
+        reason: r.status as 'owner_use',
+        source: 'manual' as const,
+        notes: r.checkin_notes,
+        channel_id: null,
+      })),
+    conflicts: [] as Awaited<ReturnType<typeof fullCalendarData>>['conflicts'],
+    payouts: [] as Awaited<ReturnType<typeof fullCalendarData>>['payouts'],
+    bills: [] as Awaited<ReturnType<typeof fullCalendarData>>['bills'],
+  }
+}
 type BookingRow = Data['bookings'][number]
 type BlockRow = Data['blocks'][number]
 
 export function CalendarPage() {
   const [params] = useSearchParams()
-  const q = useCalendarData()
+  const { member } = useAuth()
+  const staff = member?.role === 'staff'
+  const q = useCalendarData(staff)
   const channels = useChannels()
   const [layers, setLayers] = useState<Record<Layer, boolean>>({ bookings: true, cancelled: false, blocks: true, markers: true })
   const [hiddenChannels, setHiddenChannels] = useState<Set<string>>(new Set())
@@ -90,7 +140,9 @@ export function CalendarPage() {
           title: `${b.guest_name ?? b.ref ?? 'Details needed'} · ${b.nights}n`,
           backgroundColor: b.channel_color ?? undefined,
           borderColor: conflictIds.has(b.booking_id) ? 'var(--destructive)' : (b.channel_color ?? undefined),
-          classNames: cn(!active && 'fc-cancelled', conflictIds.has(b.booking_id) && 'fc-conflict', b.needs_details && 'fc-stub').split(' ').filter(Boolean),
+          classNames: cn(!active && 'fc-cancelled', conflictIds.has(b.booking_id) && 'fc-conflict', b.needs_details && 'fc-stub')
+            .split(' ')
+            .filter(Boolean),
           extendedProps: { kind: 'booking', row: b },
         })
       }
@@ -117,7 +169,13 @@ export function CalendarPage() {
       const active = d.bookings.filter((b) => ACTIVE.includes(b.status!))
       const ins = new Set(active.map((b) => b.check_in))
       for (const day of new Set(active.map((b) => b.check_out).filter((x) => ins.has(x)))) {
-        out.push({ start: day!, allDay: true, title: '⇄ Turnover', classNames: ['fc-marker', 'fc-marker-turnover'], extendedProps: { kind: 'marker' } })
+        out.push({
+          start: day!,
+          allDay: true,
+          title: '⇄ Turnover',
+          classNames: ['fc-marker', 'fc-marker-turnover'],
+          extendedProps: { kind: 'marker' },
+        })
       }
     }
     if (layers.markers) {
@@ -202,10 +260,10 @@ export function CalendarPage() {
           height="auto"
           events={events}
           eventClick={onEventClick}
-          selectable
+          selectable={!staff}
           selectLongPressDelay={300}
           select={onSelect}
-          dateClick={onDateClick}
+          dateClick={staff ? undefined : onDateClick}
           dayMaxEvents={4}
           eventDisplay="block"
           displayEventTime={false}
@@ -218,7 +276,7 @@ export function CalendarPage() {
         schedule, so confirm availability on the platform before accepting a direct booking for near dates.
       </p>
 
-      <BookingDrawer row={openBooking} onClose={() => setOpenBooking(null)} />
+      <BookingDrawer row={openBooking} onClose={() => setOpenBooking(null)} staff={staff} />
       <BlockDialog row={openBlock} onClose={() => setOpenBlock(null)} />
       <QuickAdd range={range} onClose={() => setRange(null)} data={q.data} />
     </div>
@@ -241,15 +299,20 @@ function Chip({ on, onClick, children }: { on: boolean; onClick: () => void; chi
   )
 }
 
-function BookingDrawer({ row, onClose }: { row: BookingRow | null; onClose: () => void }) {
+function BookingDrawer({ row, onClose, staff }: { row: BookingRow | null; onClose: () => void; staff: boolean }) {
   return (
     <Dialog open={!!row} onOpenChange={(o) => !o && onClose()}>
       {row && (
-        <DialogContent title={row.guest_name ?? 'Guest details needed'} description={`${row.channel_name}${row.ref ? ` · ${row.ref}` : ''}`}>
+        <DialogContent
+          title={row.guest_name ?? 'Guest details needed'}
+          description={`${row.channel_name}${row.ref ? ` · ${row.ref}` : ''}`}
+        >
           <div className="flex flex-col gap-3 text-sm">
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge status={row.status!} />
-              {row.booking_type !== 'standard' && <span className="text-muted-foreground">{row.booking_type?.replace('_', ' / ')}</span>}
+              {row.booking_type !== 'standard' && (
+                <span className="text-muted-foreground">{row.booking_type?.replace('_', ' / ')}</span>
+              )}
             </div>
             <p>
               {formatDate(row.check_in!)} to {formatDate(row.check_out!)} · {row.nights} night{row.nights === 1 ? '' : 's'}
@@ -259,20 +322,28 @@ function BookingDrawer({ row, onClose }: { row: BookingRow | null; onClose: () =
                 {row.guest_phone}
               </a>
             )}
-            <p>
-              Net <Money amount={row.net} currency={row.currency as Currency} />
-              {row.currency === 'USD' && (
-                <>
-                  {' '}
-                  · <Money amount={row.net_pkr} currency="PKR" estimate={!!row.pkr_is_estimate} />
-                </>
-              )}
-            </p>
-            <Button asChild size="lg">
-              <Link to={row.needs_details ? `/bookings/${row.booking_id}/edit` : `/bookings/${row.booking_id}`}>
-                {row.needs_details ? 'Complete details' : 'Open booking'}
-              </Link>
-            </Button>
+            {staff ? (
+              (row as unknown as { checkin_notes?: string | null }).checkin_notes && (
+                <p className="whitespace-pre-wrap">{(row as unknown as { checkin_notes?: string | null }).checkin_notes}</p>
+              )
+            ) : (
+              <>
+                <p>
+                  Net <Money amount={row.net} currency={row.currency as Currency} />
+                  {row.currency === 'USD' && (
+                    <>
+                      {' '}
+                      · <Money amount={row.net_pkr} currency="PKR" estimate={!!row.pkr_is_estimate} />
+                    </>
+                  )}
+                </p>
+                <Button asChild size="lg">
+                  <Link to={row.needs_details ? `/bookings/${row.booking_id}/edit` : `/bookings/${row.booking_id}`}>
+                    {row.needs_details ? 'Complete details' : 'Open booking'}
+                  </Link>
+                </Button>
+              </>
+            )}
           </div>
         </DialogContent>
       )}
@@ -284,7 +355,14 @@ function BlockDialog({ row, onClose }: { row: BlockRow | null; onClose: () => vo
   const qc = useQueryClient()
   const remove = useMutation({
     mutationFn: async (id: string) =>
-      unwrap(await supabase.from('calendar_blocks').update({ deleted_at: new Date().toISOString() }).eq('id', id).select('id').single()),
+      unwrap(
+        await supabase
+          .from('calendar_blocks')
+          .update({ deleted_at: new Date().toISOString() })
+          .eq('id', id)
+          .select('id')
+          .single(),
+      ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['calendar'] })
       toast.success('Block removed')
@@ -318,7 +396,15 @@ function BlockDialog({ row, onClose }: { row: BlockRow | null; onClose: () => vo
   )
 }
 
-function QuickAdd({ range, onClose, data }: { range: { start: string; end: string } | null; onClose: () => void; data: Data | undefined }) {
+function QuickAdd({
+  range,
+  onClose,
+  data,
+}: {
+  range: { start: string; end: string } | null
+  onClose: () => void
+  data: Data | undefined
+}) {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [mode, setMode] = useState<'choose' | 'block'>('choose')
@@ -337,10 +423,14 @@ function QuickAdd({ range, onClose, data }: { range: { start: string; end: strin
         .map((b) => `${b.guest_name ?? b.ref ?? 'Booking'} (${formatDate(b.check_in!)} to ${formatDate(b.check_out!)})`),
       ...data.blocks
         .filter((k) => k.reason !== 'channel_hold' && rangesOverlap(s, e, k.start_date, k.end_date))
-        .map((k) => `${k.reason === 'owner_use' ? 'Owner use' : 'Maintenance'} (${formatDate(k.start_date)} to ${formatDate(k.end_date)})`),
+        .map(
+          (k) =>
+            `${k.reason === 'owner_use' ? 'Owner use' : 'Maintenance'} (${formatDate(k.start_date)} to ${formatDate(k.end_date)})`,
+        ),
     ]
   }, [data, s, e])
-  const holds = data?.blocks.filter((k) => k.reason === 'channel_hold' && s && e && rangesOverlap(s, e, k.start_date, k.end_date)) ?? []
+  const holds =
+    data?.blocks.filter((k) => k.reason === 'channel_hold' && s && e && rangesOverlap(s, e, k.start_date, k.end_date)) ?? []
 
   const saveBlock = useMutation({
     mutationFn: async () =>
@@ -388,12 +478,18 @@ function QuickAdd({ range, onClose, data }: { range: { start: string; end: strin
               e > s && <p className="text-sm text-emerald-700 dark:text-emerald-300">Available.</p>
             )}
             {holds.length > 0 && clashes.length === 0 && (
-              <p className="text-sm text-amber-700 dark:text-amber-300">A channel hold covers some of these dates: check the platform first.</p>
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                A channel hold covers some of these dates: check the platform first.
+              </p>
             )}
 
             {mode === 'choose' ? (
               <div className="grid gap-2">
-                <Button size="lg" disabled={clashes.length > 0 || !(e > s)} onClick={() => navigate(`/bookings/new?check_in=${s}&check_out=${e}`)}>
+                <Button
+                  size="lg"
+                  disabled={clashes.length > 0 || !(e > s)}
+                  onClick={() => navigate(`/bookings/new?check_in=${s}&check_out=${e}`)}
+                >
                   New booking
                 </Button>
                 <Button size="lg" variant="outline" disabled={clashes.length > 0 || !(e > s)} onClick={() => setMode('block')}>

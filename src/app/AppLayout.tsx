@@ -2,28 +2,41 @@ import { Suspense } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { QuickAdd } from './QuickAdd'
-import { BedDouble, CalendarDays, LayoutDashboard, LogOut, Settings, Users, Wallet } from 'lucide-react'
+import { BedDouble, CalendarDays, ListChecks, LayoutDashboard, LogOut, Settings, Users, Wallet } from 'lucide-react'
 import { signOut, useAuth } from './auth'
 import { cn } from '@/lib/utils'
 import { Loading } from '@/components/common'
 
+// bottom bar on phones (5 slots); the sidebar adds the rest
 const NAV = [
   { to: '/', label: 'Overview', icon: LayoutDashboard, end: true },
   { to: '/calendar', label: 'Calendar', icon: CalendarDays, end: false },
   { to: '/bookings', label: 'Bookings', icon: BedDouble, end: false },
+  { to: '/tasks', label: 'Tasks', icon: ListChecks, end: false },
   { to: '/money', label: 'Money', icon: Wallet, end: false },
+]
+const MORE = [
   { to: '/partners', label: 'Partners', icon: Users, end: false },
+  { to: '/settings', label: 'Settings', icon: Settings, end: false },
+]
+// caretaker: calendar and tasks only (no financial screens)
+const STAFF_NAV = [
+  { to: '/calendar', label: 'Calendar', icon: CalendarDays, end: false },
+  { to: '/tasks', label: 'Tasks', icon: ListChecks, end: false },
 ]
 
 export function AppLayout() {
   const { member } = useAuth()
   const location = useLocation()
+  const staff = member?.role === 'staff'
+  const nav = staff ? STAFF_NAV : NAV
+  const sideNav = staff ? STAFF_NAV : [...NAV, ...MORE]
   return (
     <div className="min-h-dvh md:grid md:grid-cols-[220px_1fr]">
       <aside className="sticky top-0 hidden h-dvh border-r bg-card p-4 md:flex md:flex-col md:gap-1">
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">SAHA Residences</p>
         <p className="mb-4 text-lg font-semibold">DHA Retreat</p>
-        {[...NAV, { to: '/settings', label: 'Settings', icon: Settings, end: false }].map((item) => (
+        {sideNav.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
@@ -49,10 +62,22 @@ export function AppLayout() {
         <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur md:hidden">
           <span className="font-semibold">DHA Retreat</span>
           <div className="-mr-2 flex">
-            <Link to="/settings" aria-label="Settings" className="flex size-11 items-center justify-center rounded-md hover:bg-muted">
-              <Settings className="size-5" aria-hidden />
-            </Link>
-            <button onClick={signOut} aria-label="Sign out" className="flex size-11 items-center justify-center rounded-md hover:bg-muted">
+            {!staff &&
+              MORE.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  aria-label={item.label}
+                  className="flex size-11 items-center justify-center rounded-md hover:bg-muted"
+                >
+                  <item.icon className="size-5" aria-hidden />
+                </Link>
+              ))}
+            <button
+              onClick={signOut}
+              aria-label="Sign out"
+              className="flex size-11 items-center justify-center rounded-md hover:bg-muted"
+            >
               <LogOut className="size-5" aria-hidden />
             </button>
           </div>
@@ -69,9 +94,12 @@ export function AppLayout() {
       <QuickAdd />
       <nav
         aria-label="Main"
-        className="fixed inset-x-0 bottom-0 z-10 grid grid-cols-5 border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
+        className={cn(
+          'fixed inset-x-0 bottom-0 z-10 grid border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden',
+          staff ? 'grid-cols-2' : 'grid-cols-5',
+        )}
       >
-        {NAV.map((item) => (
+        {nav.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

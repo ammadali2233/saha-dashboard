@@ -4,7 +4,9 @@ import { AlertCircle, CalendarPlus, Paperclip, Pencil, Plus, XCircle } from 'luc
 import { toast } from 'sonner'
 import { useBooking, useSavePayment, useUpdateBooking, type PaymentRow } from './api'
 import { PaymentDialog } from './PaymentDialog'
-import { useAudit, usePartners, useSettings } from '@/lib/queries'
+import { unwrap, useAudit, usePartners, useSettings } from '@/lib/queries'
+import { supabase } from '@/lib/supabase'
+import { useQuery } from '@tanstack/react-query'
 import { ErrorNote, Loading, Money, PageHeader, StatusBadge } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -247,6 +249,8 @@ export function BookingDetailPage() {
         </CardContent>
       </Card>
 
+      <BookingTasks bookingId={booking.id} />
+
       {(booking.checkin_notes || booking.notes) && (
         <Card>
           <CardHeader>
@@ -301,6 +305,35 @@ export function BookingDetailPage() {
       />
       <CancelDialog open={cancelOpen} onOpenChange={setCancelOpen} bookingId={booking.id} />
     </div>
+  )
+}
+
+function BookingTasks({ bookingId }: { bookingId: string }) {
+  const q = useQuery({
+    queryKey: ['tasks', 'booking', bookingId],
+    queryFn: async () =>
+      unwrap(await supabase.from('tasks').select('id, title, due_date, status').eq('booking_id', bookingId).is('deleted_at', null).order('due_date')),
+  })
+  if (!q.data?.length) return null
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center justify-between">
+        <CardTitle>Tasks</CardTitle>
+        <Button asChild variant="outline" size="sm">
+          <Link to="/tasks">All tasks</Link>
+        </Button>
+      </CardHeader>
+      <CardContent>
+        <ul className="divide-y text-sm">
+          {q.data.map((t) => (
+            <li key={t.id} className="flex justify-between gap-3 py-2">
+              <span className={t.status === 'done' ? 'text-muted-foreground line-through' : ''}>{t.title}</span>
+              <span className="shrink-0 text-muted-foreground">{t.due_date ? formatDate(t.due_date) : ''}</span>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
   )
 }
 
