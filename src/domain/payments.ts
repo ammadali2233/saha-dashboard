@@ -12,6 +12,7 @@ export type PaymentKind =
   | 'deposit_withheld'
   | 'guest_refund'
   | 'cancellation_payout'
+  | 'extra_charge'
 
 export type PaymentStatus = 'scheduled' | 'due' | 'received' | 'overdue' | 'waived'
 
@@ -26,6 +27,7 @@ export const PAYMENT_KIND_LABELS: Record<PaymentKind, string> = {
   deposit_withheld: 'Deposit withheld (damage recovery)',
   guest_refund: 'Refund to guest',
   cancellation_payout: 'Cancellation payout',
+  extra_charge: 'Extra charge (outside the booking)',
 }
 
 export const PAYOUT_KINDS: readonly PaymentKind[] = ['airbnb_payout', 'booking_com_payout']
@@ -39,6 +41,7 @@ export const REVENUE_SIGN: Partial<Record<PaymentKind, 1 | -1>> = {
   booking_com_payout: 1,
   cancellation_payout: 1,
   deposit_withheld: 1, // "Damage recovery" revenue on its date (rule 8)
+  extra_charge: 1, // e.g. PKR cash for extra guests on a USD Airbnb stay
   guest_refund: -1,
 }
 

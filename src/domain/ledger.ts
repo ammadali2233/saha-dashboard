@@ -27,6 +27,7 @@ const PAYMENT_CASH: Partial<Record<Payment['kind'], { kind: LedgerKind; sign: 1 
   airbnb_payout: { kind: 'revenue', sign: 1 },
   booking_com_payout: { kind: 'revenue', sign: 1 },
   cancellation_payout: { kind: 'revenue', sign: 1 },
+  extra_charge: { kind: 'revenue', sign: 1 },
   guest_refund: { kind: 'guest_refund', sign: -1 },
   deposit_in: { kind: 'deposit_in', sign: 1 },
   deposit_refund: { kind: 'deposit_refund', sign: -1 },
