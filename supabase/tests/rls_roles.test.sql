@@ -3,6 +3,11 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select no_plan();
 
+-- start from empty business tables (local dev data must not leak in); rolled back at the end
+truncate public.bookings, public.booking_lines, public.payments, public.calendar_blocks, public.guests,
+  public.expenses, public.capital_movements, public.tasks, public.inquiries, public.quotes, public.quote_lines,
+  public.doc_counters cascade;
+
 -- ---------------------------------------------------------------- fixtures (as postgres, RLS bypassed)
 delete from public.app_users where email like '%@test.local'; -- local dev logins; rolled back at the end
 insert into public.app_users (email, display_name, role, active) values
@@ -107,7 +112,7 @@ select is_empty($$ delete from public.expenses where item = 'Deep clean' returni
 select lives_ok($$ update public.expenses set deleted_at = now() where item = 'Deep clean' $$, 'partner can soft delete');
 select throws_ok($$ update public.expenses set deleted_at = null where item = 'Deep clean' $$, '42501', null,
   'partner cannot restore a deleted row');
-select is((select count(*) from public.audit_log where table_name = 'expenses'), 2::bigint,
+select is((select count(*) from public.audit_log where table_name = 'expenses' and coalesce(after, before) ->> 'item' = 'Deep clean'), 2::bigint,
   'partner can read the audit log (insert + soft delete logged)');
 select pg_temp.logout();
 

@@ -3,6 +3,11 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select no_plan();
 
+-- start from empty business tables (local dev data must not leak in); rolled back at the end
+truncate public.bookings, public.booking_lines, public.payments, public.calendar_blocks, public.guests,
+  public.expenses, public.capital_movements, public.tasks, public.inquiries, public.quotes, public.quote_lines,
+  public.doc_counters cascade;
+
 create temp table ch as select id, code from public.channels;
 
 insert into public.bookings (id, ref, channel_id, check_in, check_out, status)

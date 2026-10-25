@@ -50,6 +50,14 @@ npm run lint
 15. **Capital recovered %** = (distributions + undistributed realized profit) / total invested. Payback projection from trailing 3-month realized profit.
 16. **Display.** Dates `25 Oct 2026`; timezone Asia/Karachi everywhere (UTC+5, no DST; server runs UTC: use `pk_today()` in SQL and `pkToday()` in TS). Amounts `PKR 150,000` and `$40.00` (`src/domain/format.ts`).
 
+## Interpretations (Phase 1b; confirm or change with Ammad)
+- Platform fee % applies to gross (accommodation + fees) before discounts, as rule 2 states.
+- Tax lines are pass-through: shown, but not in gross, net or revenue.
+- Occupancy: owner-use and maintenance nights are removed from available nights. With the rule 7 filter on, partner/promotional nights are removed from both occupied and available.
+- Direct schedule: advance % and deposit % are of the booking's net total.
+- Capital returns leave the project account like distributions. Deposits pass through the ledger (in at check-in, out on refund) so bank reconciliation matches; withheld deposits move no cash.
+- Expenses in USD (rare) convert at `settings.default_usd_pkr`.
+
 ## Hard constraints
 - No Airbnb API for individual hosts. Never scrape, log into, or automate airbnb.com. Automation = iCal feeds, Airbnb transaction CSV export, manual entry.
 - Airbnb iCal: dates, "Reserved"/"Not available", reservation URL, guest phone last 4. No name, no price → new reservations arrive as `needs_details` stubs.
