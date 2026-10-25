@@ -39,6 +39,16 @@ First-time account setup (Supabase, GitHub, Netlify, Google sign-in): [docs/SETU
 - Supabase Auth → URL Configuration: Site URL = the Netlify URL; add `https://<site>.netlify.app/**` and `https://deploy-preview-*--<site>.netlify.app/**` to redirect URLs.
 - Supabase Auth → Hooks: enable "Before User Created" → Postgres function `public.hook_before_user_created`.
 
+## Google Sheet import (one-off migration)
+Put the sheet's `.xlsx` export in `/import` (gitignored, never committed). Decisions that involve guest data (direct-booking quote lines, advance dates, setup categories) live in `import/corrections.json`, also gitignored.
+
+```bash
+npx tsx scripts/import-sheet/index.ts                            # dry run against local Supabase
+npx tsx scripts/import-sheet/index.ts --target linked            # dry run against the hosted project
+npx tsx scripts/import-sheet/index.ts --target linked --apply    # import (refuses while anything is blocking)
+```
+Each run writes a reconciliation report and the SQL to `import/reports/`. Re-running is safe: rows are matched by `import_key` and updated in place, and rows removed from the sheet are soft-deleted. Edits made in the app to imported rows are overwritten by a re-run, so stop re-running once partners start editing.
+
 ## To be documented as features land
 - Rotating iCal export tokens (Phase 2)
 - Running the Airbnb CSV import (Phase 3)
