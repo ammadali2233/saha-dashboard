@@ -23,6 +23,7 @@ npm run lint
 - `src/domain/` pure TS business rules (shared by UI previews and Netlify functions). Every rule has a Vitest test.
 - `supabase/migrations/` the schema; SQL views are the reporting source of truth. Never edit an applied migration: add a new one.
 - `supabase/tests/` pgTAP tests. `netlify/functions/` server jobs (service role key lives only here).
+- `netlify/functions/`: daily-jobs (cron 19:05 UTC), ical-import (hourly), ical-sync-now, ical-export (/ical/<token>/direct.ics|all.ics), quote-pdf. Shared code in `netlify/lib/` (service-role client, pure iCal rules with tests).
 - `scripts/import-sheet/` one-off migration from the Google Sheet `.xlsx` export in `/import` (gitignored).
 
 ## Working rules
@@ -60,6 +61,8 @@ npm run lint
 - Capital returns leave the project account like distributions. Deposits pass through the ledger (in at check-in, out on refund) so bank reconciliation matches; withheld deposits move no cash.
 - Expenses in USD (rare) convert at `settings.default_usd_pkr`.
 - Overview: occupancy, completed nights and ADR count nights from go-live (5 Oct 2026). "Operating costs this month" is by expense date (incurred), the cash P&L uses paid date.
+- Payments: saving a booking creates its expected rows (platform payout, or direct advance/balance/deposit) via `ensure_payment_schedule`; accepting a quote uses the quote's own terms.
+- iCal: matched by confirmation code, then UID, then exact dates. Holds that only echo our own bookings/blocks are skipped. Disappeared reservations are flagged, never cancelled.
 - Performance budget: keep form/schema libraries, FullCalendar and date libraries out of the first load (lazy routes, `manualChunks`); the sign-in page must stay above 90 on Lighthouse mobile.
 
 ## Hard constraints

@@ -49,7 +49,18 @@ npx tsx scripts/import-sheet/index.ts --target linked --apply    # import (refus
 ```
 Each run writes a reconciliation report and the SQL to `import/reports/`. Re-running is safe: rows are matched by `import_key` and updated in place, and rows removed from the sheet are soft-deleted. Edits made in the app to imported rows are overwritten by a re-run, so stop re-running once partners start editing.
 
+## Calendar sync (iCal)
+- **Import (Airbnb, Booking.com):** Settings → Calendar sync → Set link. Paste the platform's iCal export link; it is stored server-side only and cannot be read back. (Alternatively set `ICAL_AIRBNB_URL` / `ICAL_BOOKING_COM_URL` in Netlify.) Runs hourly; **Sync now** runs it on demand.
+- New Airbnb reservations arrive as bookings marked "needs details" (dates, code, phone last 4). Completing them creates the expected payout and tasks.
+- A synced reservation that disappears from the feed is flagged "possibly cancelled". Nothing is cancelled automatically.
+- **Export:** Settings → Calendar feeds → New link. `direct.ics` (no guest names) goes into Airbnb's and Booking.com's "import calendar"; `all.ics` is for partners' Google/Apple calendars.
+
+## How to rotate an iCal feed token
+Settings → Calendar feeds → **Revoke** the old link (it stops working at once) → **New link** → paste the new URL wherever the old one was used (Airbnb, Booking.com, partners' calendars). Only a hash of each token is stored, so a lost link cannot be recovered, only replaced.
+
+## Daily jobs
+Netlify runs `daily-jobs` at 19:05 UTC (00:05 Karachi): check-ins/check-outs, payments due/overdue, booking tasks, recurring bills. The owner can also run it from Settings → Automation. Every run is logged there.
+
 ## To be documented as features land
-- Rotating iCal export tokens (Phase 2)
 - Running the Airbnb CSV import (Phase 3)
 - Restoring from a backup snapshot (Phase 3)
