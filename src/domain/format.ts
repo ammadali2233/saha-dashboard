@@ -1,5 +1,3 @@
-import { formatInTimeZone } from 'date-fns-tz'
-
 export const PROPERTY_TZ = 'Asia/Karachi'
 
 export type Currency = 'PKR' | 'USD'
@@ -14,9 +12,13 @@ export function formatMoney(amount: number, currency: Currency): string {
   return currency === 'PKR' ? `${sign}PKR ${pkr.format(Math.round(abs))}` : `${sign}$${usd.format(abs)}`
 }
 
+// Intl does the timezone work, so the first screen ships no date library.
+const ymd = new Intl.DateTimeFormat('en-CA', { timeZone: PROPERTY_TZ, year: 'numeric', month: '2-digit', day: '2-digit' })
+const hm = new Intl.DateTimeFormat('en-GB', { timeZone: PROPERTY_TZ, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+
 /** Today's date in Karachi as `YYYY-MM-DD`, whatever timezone the code runs in. */
 export function pkToday(now: Date = new Date()): string {
-  return formatInTimeZone(now, PROPERTY_TZ, 'yyyy-MM-dd')
+  return ymd.format(now)
 }
 
 /** `2026-10-25` → `25 Oct 2026`. Accepts an ISO date string (calendar date, no timezone shift). */
@@ -28,7 +30,8 @@ export function formatDate(isoDate: string): string {
 
 /** A timestamp shown in Karachi time: `25 Oct 2026, 14:05`. */
 export function formatTimestamp(ts: string | Date): string {
-  return formatInTimeZone(ts, PROPERTY_TZ, 'd MMM yyyy, HH:mm')
+  const d = typeof ts === 'string' ? new Date(ts) : ts
+  return `${formatDate(ymd.format(d))}, ${hm.format(d)}`
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']

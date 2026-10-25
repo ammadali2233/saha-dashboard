@@ -5,9 +5,9 @@ import { Toaster } from 'sonner'
 import { AuthProvider, signOut, useAuth } from '@/app/auth'
 import { AppLayout } from '@/app/AppLayout'
 import { LoginPage } from '@/features/auth/LoginPage'
-import { OverviewPage } from '@/features/overview/OverviewPage'
 import { Button } from '@/components/ui/button'
 
+const OverviewPage = lazy(() => import('@/features/overview/OverviewPage').then((m) => ({ default: m.OverviewPage })))
 const CalendarPage = lazy(() => import('@/features/calendar/CalendarPage').then((m) => ({ default: m.CalendarPage })))
 const SettingsPage = lazy(() => import('@/features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })))
 const BookingsPage = lazy(() => import('@/features/bookings/BookingsPage').then((m) => ({ default: m.BookingsPage })))

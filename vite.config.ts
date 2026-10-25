@@ -13,9 +13,11 @@ export default defineConfig({
       output: {
         // Long-lived vendor chunks so app deploys don't re-download libraries on 4G.
         manualChunks: {
-          react: ['react', 'react-dom', 'react-router'],
+          react: ['react', 'react-dom', 'react-dom/client', 'react-router'],
           supabase: ['@supabase/supabase-js'],
-          data: ['@tanstack/react-query', 'zod', 'react-hook-form', '@hookform/resolvers'],
+          query: ['@tanstack/react-query'],
+          // only form pages load this chunk; the sign-in screen stays light
+          forms: ['zod', 'react-hook-form', '@hookform/resolvers'],
         },
       },
     },

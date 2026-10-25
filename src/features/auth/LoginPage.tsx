@@ -1,7 +1,4 @@
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+import { useState, type FormEvent } from 'react'
 import { MailCheck } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
@@ -9,20 +6,24 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
-const schema = z.object({ email: z.string().trim().toLowerCase().email('Enter a valid email address') })
-type FormValues = z.infer<typeof schema>
-
+// Plain state and native validation: this is the first screen on a phone, so it stays light
+// (no form or schema libraries in the initial download).
 export function LoginPage() {
+  const [email, setEmail] = useState('')
   const [sentTo, setSentTo] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { email: '' } })
+  const [busy, setBusy] = useState(false)
 
-  async function onSubmit({ email }: FormValues) {
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    const value = email.trim().toLowerCase()
     setError(null)
+    setBusy(true)
     const { error } = await supabase.auth.signInWithOtp({
-      email,
+      email: value,
       options: { emailRedirectTo: window.location.origin },
     })
+    setBusy(false)
     if (error) {
       setError(
         /access list|not allowed|403/i.test(error.message)
@@ -31,7 +32,7 @@ export function LoginPage() {
       )
       return
     }
-    setSentTo(email)
+    setSentTo(value)
   }
 
   async function signInWithGoogle() {
@@ -72,28 +73,26 @@ export function LoginPage() {
                 or get an email link
                 <span className="h-px flex-1 bg-border" />
               </div>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4" noValidate>
+              <form onSubmit={onSubmit} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
                     type="email"
+                    required
                     autoComplete="email"
                     inputMode="email"
-                    aria-invalid={!!form.formState.errors.email}
-                    {...form.register('email')}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                   />
-                  {form.formState.errors.email && (
-                    <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
-                  )}
                 </div>
                 {error && (
                   <p className="text-sm text-destructive" role="alert">
                     {error}
                   </p>
                 )}
-                <Button type="submit" size="lg" variant="outline" disabled={form.formState.isSubmitting}>
-                  {form.formState.isSubmitting ? 'Sending…' : 'Email me a sign-in link'}
+                <Button type="submit" size="lg" variant="outline" disabled={busy}>
+                  {busy ? 'Sending…' : 'Email me a sign-in link'}
                 </Button>
               </form>
             </div>
