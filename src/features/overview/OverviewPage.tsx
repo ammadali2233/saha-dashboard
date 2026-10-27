@@ -108,6 +108,7 @@ export function OverviewPage() {
             <Kpi to={`/calendar?date=${nextMonth}-01`} label={`Occupancy ${monthName(`${nextMonth}-01`)}`} hint={`${k.occ_next_occupied}/${k.occ_next_available} nights on the books`}>
               {pct(k.occ_next_rate)}
             </Kpi>
+            <MonthOccupancy exclude={exclude} initial={nextMonth} />
             <Kpi to={`/bookings?month=${thisMonth}`} label="ADR this month" hint="Net revenue per occupied night">
               <Money amount={k.adr_this_pkr} currency="PKR" estimate={!!k.adr_has_estimates} />
             </Kpi>
@@ -234,6 +235,40 @@ export function OverviewPage() {
           </CardContent>
         </Card>
       </div>
+    </div>
+  )
+}
+
+/** Occupancy for any month the user picks (same rules as the tiles above: from go-live, capped at 100%). */
+function MonthOccupancy({ exclude, initial }: { exclude: boolean; initial: string }) {
+  const [month, setMonth] = useState(initial)
+  const [y, m] = month.split('-').map(Number) as [number, number]
+  const start = `${month}-01`
+  const end = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, '0')}-01`
+  const q = useQuery({
+    queryKey: ['occupancy_month', month, exclude],
+    enabled: /^\d{4}-\d{2}$/.test(month),
+    queryFn: async () =>
+      unwrap(await supabase.rpc('occupancy_stats', { p_start: start, p_end: end, p_exclude_nonstandard: exclude }))[0],
+  })
+  return (
+    <div className="rounded-lg border bg-card p-3">
+      <label className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+        Occupancy for
+        <input
+          type="month"
+          value={month}
+          onChange={(e) => e.target.value && setMonth(e.target.value)}
+          className="h-8 min-w-0 rounded-md border bg-card px-1 text-xs text-foreground"
+          aria-label="Month to show occupancy for"
+        />
+      </label>
+      <Link to={`/calendar?date=${start}`} className="block">
+        <p className="mt-1 text-lg font-semibold">{q.isPending ? '…' : pct(q.data?.rate)}</p>
+        <p className="text-xs text-muted-foreground">
+          {q.data ? `${q.data.occupied}/${q.data.available} nights · ${monthName(start)} ${y}` : q.error ? 'Could not load' : ' '}
+        </p>
+      </Link>
     </div>
   )
 }

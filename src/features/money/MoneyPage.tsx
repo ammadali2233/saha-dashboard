@@ -3,7 +3,8 @@ import { Link, useSearchParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Paperclip, Plus } from 'lucide-react'
 import { useExpenses, useLedger, useVendorBalances } from './api'
-import { unwrap, usePartners } from '@/lib/queries'
+import { unwrap, usePartners, useSettings } from '@/lib/queries'
+import { fromCents, roundCents, toCents } from '@/domain/money'
 import { supabase } from '@/lib/supabase'
 import { PAYMENT_KIND_LABELS, type PaymentKind } from '@/domain/payments'
 import { EmptyState, ErrorNote, Loading, Money, PageHeader, Stat, StatusBadge } from '@/components/common'
@@ -88,7 +89,20 @@ function IncomingTab() {
       ),
   })
   const today = pkToday()
+  const month = params.get('month') ?? ''
+  const settings = useSettings()
+  const setParam = (k: string, v: string | null) => {
+    const n = new URLSearchParams(params)
+    n.set('tab', 'incoming')
+    if (v) n.set(k, v)
+    else n.delete(k)
+    setParams(n, { replace: true })
+  }
+  // the date a row belongs to: when money already in hand arrived, otherwise when it is due
+  const rowDate = (p: { held_by_partner: boolean | null; status: string | null; received_date: string | null; due_date: string | null }) =>
+    p.held_by_partner || p.status === 'received' ? p.received_date : p.due_date
   const rows = (q.data ?? []).filter((p) => {
+    if (month && !rowDate(p)?.startsWith(month)) return false
     const b = p.bookings
     if (!b || ['cancelled', 'no_show', 'fraud'].includes(b.status)) return false
     if (show && !(SHOW[show].kinds as readonly string[]).includes(p.kind!)) return false
@@ -97,13 +111,21 @@ function IncomingTab() {
     return p.held_by_partner || !['received', 'waived'].includes(p.status!)
   })
   const deposits = show === 'deposits'
+  // refunds and withheld deposits reduce what is held
+  const signed = (p: (typeof rows)[number]) =>
+    (p.kind === 'deposit_refund' || p.kind === 'deposit_withheld' ? -1 : 1) *
+    Number(p.status === 'received' ? p.amount_received : p.amount_due)
+  const totals = { PKR: 0, USD: 0 }
+  for (const p of rows) totals[p.currency as 'PKR' | 'USD'] += toCents(signed(p))
+  const rate = Number(settings.data?.default_usd_pkr ?? 0)
+  const combined = fromCents(totals.PKR + roundCents(totals.USD * rate))
 
   if (q.isPending) return <Loading />
   return (
     <div className="flex flex-col gap-4">
       <ErrorNote error={q.error} />
       <div className="flex flex-wrap gap-2">
-        <Button size="sm" variant={show ? 'outline' : 'secondary'} onClick={() => setParams({ tab: 'incoming' }, { replace: true })}>
+        <Button size="sm" variant={show ? 'outline' : 'secondary'} onClick={() => setParam('show', null)}>
           All
         </Button>
         {Object.entries(SHOW).map(([k, v]) => (
@@ -111,11 +133,43 @@ function IncomingTab() {
             key={k}
             size="sm"
             variant={show === k ? 'secondary' : 'outline'}
-            onClick={() => setParams({ tab: 'incoming', show: k }, { replace: true })}
+            onClick={() => setParam('show', k)}
           >
             {v.label}
           </Button>
         ))}
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <label htmlFor="incoming_month" className="text-sm text-muted-foreground">
+          Month
+        </label>
+        <input
+          id="incoming_month"
+          type="month"
+          value={month}
+          onChange={(e) => setParam('month', e.target.value || null)}
+          className="h-11 rounded-md border bg-card px-3"
+        />
+        {month && (
+          <Button size="sm" variant="ghost" onClick={() => setParam('month', null)}>
+            All months
+          </Button>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <Stat label={`Total${month ? ` for ${formatDate(`${month}-01`).slice(2)}` : ''} (${rows.length})`} hint={deposits ? 'Collected minus refunded and withheld' : undefined}>
+          <Money amount={combined} currency="PKR" estimate={totals.USD !== 0} />
+        </Stat>
+        {totals.PKR !== 0 && (
+          <Stat label="In PKR">
+            <Money amount={fromCents(totals.PKR)} currency="PKR" />
+          </Stat>
+        )}
+        {totals.USD !== 0 && (
+          <Stat label="In USD" hint={`est. at PKR ${rate} per $`}>
+            <Money amount={fromCents(totals.USD)} currency="USD" />
+          </Stat>
+        )}
       </div>
       {deposits && (
         <p className="text-sm text-muted-foreground">
