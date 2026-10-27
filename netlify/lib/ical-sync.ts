@@ -1,6 +1,6 @@
 // Runs the iCal import for every channel with a feed URL. Small, idempotent, logged in sync_runs.
 import { adminClient } from './supabase'
-import { parseFeed, planSync, type ChannelCode } from './ical'
+import { dateChangeNote, parseFeed, planSync, type ChannelCode } from './ical'
 
 const ENV_URL: Record<ChannelCode, string | undefined> = {
   airbnb: process.env.ICAL_AIRBNB_URL,
@@ -76,10 +76,22 @@ async function syncChannel(sb: ReturnType<typeof adminClient>, channelId: string
       })
       fail(error)
     }
+    let datesChanged = 0
     for (const u of plan.update) {
+      const before = bookings.data!.find((b) => b.id === u.id)!
+      const note = dateChangeNote(before, u)
+      if (note) datesChanged += 1
       const { error } = await sb
         .from('bookings')
-        .update({ check_in: u.check_in, check_out: u.check_out, ical_uid: u.ical_uid, ref: u.ref, ...(u.clearFlag ? { possibly_cancelled_at: null } : {}) })
+        .update({
+          check_in: u.check_in,
+          check_out: u.check_out,
+          ical_uid: u.ical_uid,
+          ref: u.ref,
+          ...(u.clearFlag ? { possibly_cancelled_at: null } : {}),
+          // the sync never changes money: flag the booking so someone checks its charges
+          ...(note ? { sync_changed_at: new Date().toISOString(), sync_change_note: note } : {}),
+        })
         .eq('id', u.id)
       fail(error)
     }
@@ -103,6 +115,7 @@ async function syncChannel(sb: ReturnType<typeof adminClient>, channelId: string
       events: events.length,
       created: plan.create.length,
       updated: plan.update.length,
+      dates_changed: datesChanged,
       possibly_cancelled: plan.flagMissing.length,
       holds_added: plan.createHolds.length,
       holds_updated: plan.updateHolds.length,

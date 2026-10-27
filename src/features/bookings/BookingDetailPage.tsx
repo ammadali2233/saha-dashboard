@@ -100,6 +100,18 @@ export function BookingDetailPage() {
           <AlertCircle className="size-4" aria-hidden /> This booking came from the calendar feed. Add the guest and charges.
         </Link>
       )}
+      {booking.sync_changed_at && (
+        <Link
+          to={`/bookings/${booking.id}/edit`}
+          className="flex items-start gap-2 rounded-md bg-amber-500/15 p-3 text-sm text-amber-800 dark:text-amber-200"
+        >
+          <AlertCircle className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <span>
+            Dates changed on {fin.channel_name} ({booking.sync_change_note}). The charges below still reflect the old stay: check the nights
+            and amounts against the platform, then save.
+          </span>
+        </Link>
+      )}
 
       <Card>
         <CardContent className="grid grid-cols-2 gap-3 pt-4 text-sm sm:grid-cols-4">

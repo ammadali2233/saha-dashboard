@@ -3,6 +3,7 @@
 // Airbnb's export has, per event: dates, "Reserved" or "Airbnb (Not available)", a reservation URL
 // and the guest's last 4 phone digits. No name, no price. Booking.com's export has blocked dates only.
 import ical from 'node-ical'
+import { formatDate } from '../../src/domain/format'
 
 export type ChannelCode = 'airbnb' | 'booking_com'
 
@@ -83,6 +84,18 @@ export interface SyncPlan {
 }
 
 const ACTIVE = ['tentative', 'confirmed', 'in_house']
+
+/**
+ * When the sync moves a booking's dates, the charges (nights x rate) may no longer match. The
+ * sync never changes money, so it leaves this note and the booking is flagged for a person.
+ */
+export function dateChangeNote(
+  before: { check_in: string; check_out: string },
+  after: { check_in: string; check_out: string },
+): string | null {
+  if (before.check_in === after.check_in && before.check_out === after.check_out) return null
+  return `was ${formatDate(before.check_in)} to ${formatDate(before.check_out)}, now ${formatDate(after.check_in)} to ${formatDate(after.check_out)}`
+}
 
 /** Is [s, e) fully covered by the union of ranges? (Used to spot our own blocks echoed back.) */
 export function covered(s: string, e: string, ranges: Range[]): boolean {

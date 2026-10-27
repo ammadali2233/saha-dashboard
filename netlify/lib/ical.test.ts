@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { covered, extractCode, parseFeed, planSync, type ExistingBooking } from './ical'
+import { covered, dateChangeNote, extractCode, parseFeed, planSync, type ExistingBooking } from './ical'
 
 // Shaped like Airbnb's export (codes and phone digits are made up)
 const AIRBNB = `BEGIN:VCALENDAR
@@ -163,5 +163,16 @@ describe('planning', () => {
   it('covered() handles adjacent and overlapping ranges', () => {
     expect(covered('2026-11-22', '2026-11-26', [{ start: '2026-11-22', end: '2026-11-24' }, { start: '2026-11-24', end: '2026-11-27' }])).toBe(true)
     expect(covered('2026-11-22', '2026-11-26', [{ start: '2026-11-22', end: '2026-11-24' }])).toBe(false)
+  })
+})
+
+describe('date changes', () => {
+  it('describes a shortened stay so the charges get checked', () => {
+    expect(
+      dateChangeNote({ check_in: '2026-12-01', check_out: '2026-12-13' }, { check_in: '2026-12-01', check_out: '2026-12-10' }),
+    ).toBe('was 1 Dec 2026 to 13 Dec 2026, now 1 Dec 2026 to 10 Dec 2026')
+  })
+  it('says nothing when only the UID or code was linked', () => {
+    expect(dateChangeNote({ check_in: '2026-11-07', check_out: '2026-11-09' }, { check_in: '2026-11-07', check_out: '2026-11-09' })).toBeNull()
   })
 })
