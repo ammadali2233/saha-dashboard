@@ -52,3 +52,62 @@ export function pnlPdf(p: { mode: 'accrual' | 'cash'; from: string; to: string; 
     ),
   ])
 }
+
+export function statementPdf(p: {
+  partner: string
+  month: string // YYYY-MM
+  st: import('../../src/domain/statement').Statement
+  generated: string
+}) {
+  const { st } = p
+  const a = st.asOf
+  const monthName = new Date(`${p.month}-01T00:00:00Z`).toLocaleString('en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' })
+  const pct = (x: number | null) => (x == null ? '-' : `${(x * 100).toFixed(1)}%`)
+  const kvTable = (rows: [string, string][]) => table(['', ''], rows)
+  return render(`${p.partner} statement ${p.month}`, [
+    header(`PARTNER STATEMENT: ${p.partner.toUpperCase()}`, `DHA Retreat · ${monthName} · SAHA Residences · generated ${formatDate(p.generated)}`),
+    h(Text, { style: s.h2 }, `Position at ${formatDate(st.monthEnd)}`),
+    kvTable([
+      ['Agreed share', `${a.agreedSharePct}%`],
+      ['Cash contributed', pkr(a.cashContributed)],
+      ['Setup costs paid personally', pkr(a.setupPaidPersonally)],
+      ['Capital returned', pkr(a.capitalReturned)],
+      ['Total invested', pkr(a.totalInvested)],
+      ['Share of capital', pct(a.capitalPct)],
+      ['To match equal share', pkr(a.shortfallToEqual)],
+      ['Profit share to date (realized)', pkr(a.profitShare)],
+      ['Distributions received', pkr(a.distributions)],
+      ['Undistributed profit', pkr(a.undistributed)],
+      ['Owed to you for expenses', pkr(a.reimbursementsOwed)],
+      ['Capital recovered', pct(a.capitalRecoveredPct)],
+    ]),
+    h(Text, { style: s.h2 }, `${monthName}: project (cash basis)`),
+    kvTable([
+      ['Realized revenue', pkr(st.month.realizedRevenue)],
+      ['Operating costs paid', pkr(-st.month.paidOperating)],
+      ['Net profit', pkr(st.month.netProfit)],
+      [`Your share (${a.agreedSharePct}%)`, pkr(st.month.share)],
+    ]),
+    h(Text, { style: s.h2 }, 'Your capital movements this month'),
+    st.movements.length
+      ? table(['Date', 'Type', 'Amount'], st.movements.map((m) => [formatDate(m.date), m.type.replace('_', ' '), pkr(m.amountPkr)]))
+      : h(Text, { style: s.note }, 'None.'),
+    h(Text, { style: s.h2 }, 'Costs you paid personally this month'),
+    st.paidPersonally.length
+      ? table(
+          ['Item', 'Paid', 'Amount', 'Status'],
+          st.paidPersonally.map((e) => [
+            `${e.item ?? ''} (${e.kind})`,
+            e.paidDate ? formatDate(e.paidDate) : '-',
+            pkr(e.amountPkr),
+            e.kind === 'setup' ? 'counts as capital' : e.reimbursable ? (e.reimbursedDate ? `reimbursed ${formatDate(e.reimbursedDate)}` : 'owed to you') : 'not reimbursed',
+          ]),
+        )
+      : h(Text, { style: s.note }, 'None.'),
+    h(
+      Text,
+      { style: s.note },
+      'Profit share = agreed share × cumulative realized net profit (cash received into the project account minus operating costs paid). Setup costs are capital. Distributions reduce undistributed profit, never ownership.',
+    ),
+  ])
+}

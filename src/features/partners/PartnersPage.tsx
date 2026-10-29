@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Plus } from 'lucide-react'
+import { FileDown, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { unwrap, usePartners } from '@/lib/queries'
@@ -70,6 +70,8 @@ export function PartnersPage() {
         {/* (distributions + undistributed) / invested = realized profit / invested */}
         <Stat label="Capital recovered">{invested > 0 ? pct(profit / invested) : '-'}</Stat>
       </div>
+
+      <Statements partners={rows.map((r) => ({ id: r.partner_id!, name: r.name! }))} />
 
       <div className="grid gap-3 sm:grid-cols-2">
         {rows.map((r) => (
@@ -259,5 +261,53 @@ function MovementDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (
         </div>
       </DialogContent>
     </Dialog>
+  )
+}
+
+/** Monthly statement PDF per partner: position at month end, plus that month's activity. */
+function Statements({ partners }: { partners: { id: string; name: string }[] }) {
+  const lastMonth = (() => {
+    const [y, m] = pkToday().slice(0, 7).split('-').map(Number) as [number, number]
+    return new Date(Date.UTC(y, m - 2, 1)).toISOString().slice(0, 7)
+  })()
+  const [month, setMonth] = useState(lastMonth)
+  const pdf = useMutation({
+    mutationFn: async (p: { id: string; name: string }) => {
+      const { data } = await supabase.auth.getSession()
+      const res = await fetch(`/api/partner-statement?partner=${p.id}&month=${month}`, {
+        headers: { authorization: `Bearer ${data.session?.access_token ?? ''}` },
+      })
+      if (!res.ok) throw new Error(res.status === 404 ? 'Statements are made on the deployed site (Netlify), not in local dev.' : `Statement failed (${res.status})`)
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(await res.blob())
+      a.download = `${p.name} statement ${month}.pdf`
+      a.click()
+      URL.revokeObjectURL(a.href)
+    },
+  })
+  return (
+    <Card>
+      <CardHeader className="flex-row flex-wrap items-center justify-between gap-2">
+        <CardTitle>Monthly statements</CardTitle>
+        <input
+          type="month"
+          aria-label="Statement month"
+          value={month}
+          max={pkToday().slice(0, 7)}
+          onChange={(e) => e.target.value && setMonth(e.target.value)}
+          className="h-10 rounded-md border bg-card px-3 text-sm"
+        />
+      </CardHeader>
+      <CardContent className="flex flex-col gap-2">
+        <div className="flex flex-wrap gap-2">
+          {partners.map((p) => (
+            <Button key={p.id} variant="outline" size="sm" disabled={pdf.isPending} onClick={() => pdf.mutate(p)}>
+              <FileDown aria-hidden /> {p.name}
+            </Button>
+          ))}
+        </div>
+        <ErrorNote error={pdf.error} />
+      </CardContent>
+    </Card>
   )
 }
