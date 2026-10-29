@@ -804,6 +804,9 @@ isOneToOne: false
 "is_owner":
 { Args: Record<PropertyKey, never>; Returns: boolean
                            },
+"mark_payouts_received":
+{ Args: { "p_date": string,"p_items": Json,"p_partner": string }; Returns: number
+                           },
 "next_doc_number":
 { Args: { "p_prefix": string,"p_year"?: number }; Returns: string
                            },

@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Paperclip, Plus } from 'lucide-react'
 import { useExpenses, useLedger, useVendorBalances } from './api'
 import { ForwardPayoutsDialog, type HeldRow } from './ForwardPayoutsDialog'
+import { MarkReceivedDialog, type PendingPayout } from './MarkReceivedDialog'
 import { unwrap, usePartners, useSettings } from '@/lib/queries'
 import { fromCents, roundCents, toCents } from '@/domain/money'
 import { supabase } from '@/lib/supabase'
@@ -113,6 +114,29 @@ function IncomingTab() {
   })
   const deposits = show === 'deposits'
   const [forwardOpen, setForwardOpen] = useState(false)
+  const [markOpen, setMarkOpen] = useState(false)
+  // platform payouts not received yet (any date: they can arrive early)
+  const pending: PendingPayout[] = (q.data ?? [])
+    .filter(
+      (p) =>
+        (p.kind === 'airbnb_payout' || p.kind === 'booking_com_payout') &&
+        ['scheduled', 'due', 'overdue'].includes(p.status!) &&
+        p.bookings &&
+        !['cancelled', 'no_show', 'fraud'].includes(p.bookings.status),
+    )
+    .map((p) => ({
+      id: p.id!,
+      guest: p.bookings?.guests?.name ?? p.bookings?.ref ?? 'Booking',
+      amountDue: Number(p.amount_due ?? 0),
+      currency: p.currency as 'PKR' | 'USD',
+      dueDate: p.due_date,
+    }))
+    .sort((a, b) => (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999'))
+  // default receiver: whoever received the latest payout
+  const lastReceiver =
+    [...(q.data ?? [])]
+      .filter((p) => p.received_by_partner_id && p.received_date)
+      .sort((a, b) => b.received_date!.localeCompare(a.received_date!))[0]?.received_by_partner_id ?? null
   // USD payouts a partner received and has not forwarded yet, oldest first
   const held: HeldRow[] = (q.data ?? [])
     .filter((p) => p.held_by_partner && p.currency === 'USD' && p.bookings && !['cancelled', 'no_show', 'fraud'].includes(p.bookings.status))
@@ -162,7 +186,18 @@ function IncomingTab() {
           </Button>
         </div>
       )}
+      {pending.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3 text-sm">
+          <span>
+            {pending.length} platform payout{pending.length === 1 ? '' : 's'} not received yet. Arrived in Payoneer (even early)?
+          </span>
+          <Button size="sm" variant="outline" onClick={() => setMarkOpen(true)}>
+            Mark received in Payoneer
+          </Button>
+        </div>
+      )}
       <ForwardPayoutsDialog open={forwardOpen} onOpenChange={setForwardOpen} held={held} />
+      <MarkReceivedDialog open={markOpen} onOpenChange={setMarkOpen} pending={pending} defaultPartnerId={lastReceiver} />
       <div className="flex flex-wrap items-center gap-2">
         <label htmlFor="incoming_month" className="text-sm text-muted-foreground">
           Month
