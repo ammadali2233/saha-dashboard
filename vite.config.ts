@@ -16,7 +16,6 @@ export default defineConfig({
           react: ['react', 'react-dom', 'react-dom/client', 'react-router'],
           supabase: ['@supabase/supabase-js'],
           query: ['@tanstack/react-query'],
-          charts: ['recharts'],
           // only form pages load this chunk; the sign-in screen stays light
           forms: ['zod', 'react-hook-form', '@hookform/resolvers'],
         },
