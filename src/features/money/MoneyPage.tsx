@@ -1,8 +1,9 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { useQuery } from '@tanstack/react-query'
 import { Paperclip, Plus } from 'lucide-react'
 import { useExpenses, useLedger, useVendorBalances } from './api'
+import { ForwardPayoutsDialog, type HeldRow } from './ForwardPayoutsDialog'
 import { unwrap, usePartners, useSettings } from '@/lib/queries'
 import { fromCents, roundCents, toCents } from '@/domain/money'
 import { supabase } from '@/lib/supabase'
@@ -111,6 +112,18 @@ function IncomingTab() {
     return p.held_by_partner || !['received', 'waived'].includes(p.status!)
   })
   const deposits = show === 'deposits'
+  const [forwardOpen, setForwardOpen] = useState(false)
+  // USD payouts a partner received and has not forwarded yet, oldest first
+  const held: HeldRow[] = (q.data ?? [])
+    .filter((p) => p.held_by_partner && p.currency === 'USD' && p.bookings && !['cancelled', 'no_show', 'fraud'].includes(p.bookings.status))
+    .map((p) => ({
+      id: p.id!,
+      usd: Number(p.amount_received),
+      receivedDate: p.received_date!,
+      guest: p.bookings?.guests?.name ?? p.bookings?.ref ?? 'Booking',
+      partner: partnerName(p.received_by_partner_id),
+    }))
+    .sort((a, b) => a.receivedDate.localeCompare(b.receivedDate) || a.id.localeCompare(b.id))
   // refunds and withheld deposits reduce what is held
   const signed = (p: (typeof rows)[number]) =>
     (p.kind === 'deposit_refund' || p.kind === 'deposit_withheld' ? -1 : 1) *
@@ -139,6 +152,17 @@ function IncomingTab() {
           </Button>
         ))}
       </div>
+      {held.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+          <span>
+            {held.length} payout{held.length === 1 ? '' : 's'} held by a partner, not yet in the project account.
+          </span>
+          <Button size="sm" onClick={() => setForwardOpen(true)}>
+            Forward to project account
+          </Button>
+        </div>
+      )}
+      <ForwardPayoutsDialog open={forwardOpen} onOpenChange={setForwardOpen} held={held} />
       <div className="flex flex-wrap items-center gap-2">
         <label htmlFor="incoming_month" className="text-sm text-muted-foreground">
           Month

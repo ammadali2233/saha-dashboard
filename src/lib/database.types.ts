@@ -783,6 +783,9 @@ isOneToOne: false
 "format_pk_date":
 { Args: { "d": string }; Returns: string
                            },
+"forward_payouts":
+{ Args: { "p_date": string,"p_items": Json,"p_rate": number,"p_total": number }; Returns: number
+                           },
 "generate_booking_tasks":
 { Args: { "p_booking": string }; Returns: number
                            },
