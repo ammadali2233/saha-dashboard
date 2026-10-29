@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { QuickAdd } from './QuickAdd'
 import {
+  BarChart3,
   BedDouble,
   CalendarDays,
   ListChecks,
@@ -27,6 +28,7 @@ const NAV = [
 ]
 const MORE = [
   { to: '/inquiries', label: 'Inquiries', icon: MessageSquareQuote, end: false },
+  { to: '/reports', label: 'Reports', icon: BarChart3, end: false },
   { to: '/partners', label: 'Partners', icon: Users, end: false },
   { to: '/settings', label: 'Settings', icon: Settings, end: false },
 ]

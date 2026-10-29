@@ -23,6 +23,7 @@ const InquiriesPage = lazy(() => import('@/features/inquiries/InquiriesPage').th
 const QuoteFormPage = lazy(() => import('@/features/inquiries/QuoteFormPage').then((m) => ({ default: m.QuoteFormPage })))
 const QuoteViewPage = lazy(() => import('@/features/inquiries/QuoteViewPage').then((m) => ({ default: m.QuoteViewPage })))
 const PublicQuotePage = lazy(() => import('@/features/inquiries/PublicQuotePage').then((m) => ({ default: m.PublicQuotePage })))
+const ReportsPage = lazy(() => import('@/features/reports/ReportsPage').then((m) => ({ default: m.ReportsPage })))
 const PartnersPage = lazy(() => import('@/features/partners/PartnersPage').then((m) => ({ default: m.PartnersPage })))
 
 const queryClient = new QueryClient({
@@ -77,6 +78,7 @@ function Gate() {
         <Route path="quotes/new" element={<QuoteFormPage />} />
         <Route path="quotes/:id" element={<QuoteViewPage />} />
         <Route path="quotes/:id/edit" element={<QuoteFormPage />} />
+        <Route path="reports" element={<ReportsPage />} />
         <Route path="partners" element={<PartnersPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="settings/audit" element={<AuditPage />} />

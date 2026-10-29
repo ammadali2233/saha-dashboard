@@ -116,6 +116,12 @@ isOneToOne: false
       referencedRelation: "channels"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "bookings_channel_id_fkey"
+      columns: ["channel_id"]
+isOneToOne: false
+      referencedRelation: "report_channel_mix"
+      referencedColumns: ["channel_id"]
+    },{
       foreignKeyName: "bookings_guest_id_fkey"
       columns: ["guest_id"]
 isOneToOne: false
@@ -141,6 +147,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "channels"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "calendar_blocks_channel_id_fkey"
+      columns: ["channel_id"]
+isOneToOne: false
+      referencedRelation: "report_channel_mix"
+      referencedColumns: ["channel_id"]
     }
                   ]
                 },"capital_movements": {
@@ -187,6 +199,12 @@ isOneToOne: false
 isOneToOne: true
       referencedRelation: "channels"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "channel_secrets_channel_id_fkey"
+      columns: ["channel_id"]
+isOneToOne: true
+      referencedRelation: "report_channel_mix"
+      referencedColumns: ["channel_id"]
     }
                   ]
                 },"channels": {
@@ -357,6 +375,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "channels"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "inquiries_channel_id_fkey"
+      columns: ["channel_id"]
+isOneToOne: false
+      referencedRelation: "report_channel_mix"
+      referencedColumns: ["channel_id"]
     },{
       foreignKeyName: "inquiries_guest_id_fkey"
       columns: ["guest_id"]
@@ -629,6 +653,12 @@ isOneToOne: false
       referencedRelation: "channels"
       referencedColumns: ["id"]
     },{
+      foreignKeyName: "bookings_channel_id_fkey"
+      columns: ["channel_id"]
+isOneToOne: false
+      referencedRelation: "report_channel_mix"
+      referencedColumns: ["channel_id"]
+    },{
       foreignKeyName: "bookings_guest_id_fkey"
       columns: ["guest_id"]
 isOneToOne: false
@@ -672,6 +702,12 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "channels"
       referencedColumns: ["id"]
+    },{
+      foreignKeyName: "bookings_channel_id_fkey"
+      columns: ["channel_id"]
+isOneToOne: false
+      referencedRelation: "report_channel_mix"
+      referencedColumns: ["channel_id"]
     }
                   ]
                 },"occupancy_daily": {
@@ -731,6 +767,22 @@ isOneToOne: false
                 },"project_account_ledger": {
                   Row: {
                     "amount": number | null,"balance": number | null,"description": string | null,"entry_date": string | null,"kind": string | null,"source_id": string | null,"source_table": string | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                },"report_bookings_monthly": {
+                  Row: {
+                    "avg_lead_days": number | null,"avg_los": number | null,"bookings": number | null,"cancelled": number | null,"lead_sample": number | null,"month": string | null,"stays": number | null
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                },"report_channel_mix": {
+                  Row: {
+                    "channel_code": string,"channel_id": string,"channel_name": string,"has_estimates": boolean | null,"month": string | null,"net_pkr": number | null,"nights": number | null
                   }
                   ComputedFields: never
                   Relationships: [
@@ -803,6 +855,9 @@ isOneToOne: false
                            },
 "is_owner":
 { Args: Record<PropertyKey, never>; Returns: boolean
+                           },
+"ledger_balance_at":
+{ Args: { "p_date": string }; Returns: number
                            },
 "mark_payouts_received":
 { Args: { "p_date": string,"p_items": Json,"p_partner": string }; Returns: number
