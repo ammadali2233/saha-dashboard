@@ -1,5 +1,6 @@
 import { Link, useSearchParams } from 'react-router'
-import { AlertCircle, Plus } from 'lucide-react'
+import { AlertCircle, Plus, Sheet } from 'lucide-react'
+import { downloadCsv } from '@/lib/csv'
 import { useBookings } from './api'
 import { useChannels } from '@/lib/queries'
 import { EmptyState, ErrorNote, Loading, Money, PageHeader, StatusBadge } from '@/components/common'
@@ -38,11 +39,57 @@ export function BookingsPage() {
       <PageHeader
         title="Bookings"
         actions={
-          <Button asChild>
-            <Link to="/bookings/new">
-              <Plus aria-hidden /> New booking
-            </Link>
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              disabled={!bookings.data?.length}
+              onClick={() =>
+                downloadCsv('Bookings', [
+                  [
+                    'Ref',
+                    'Guest',
+                    'Channel',
+                    'Check-in',
+                    'Check-out',
+                    'Nights',
+                    'Status',
+                    'Type',
+                    'Currency',
+                    'Gross',
+                    'Discounts',
+                    'Platform fee',
+                    'Net',
+                    'Net PKR',
+                    'PKR estimate',
+                  ],
+                  ...(bookings.data ?? []).map((b) => [
+                    b.ref,
+                    b.guest_name,
+                    b.channel_name,
+                    b.check_in,
+                    b.check_out,
+                    b.nights,
+                    b.status,
+                    b.booking_type,
+                    b.currency,
+                    b.gross,
+                    b.discounts,
+                    b.platform_fee,
+                    b.net,
+                    b.net_pkr,
+                    b.pkr_is_estimate ? 'yes' : 'no',
+                  ]),
+                ])
+              }
+            >
+              <Sheet aria-hidden /> CSV
+            </Button>
+            <Button asChild>
+              <Link to="/bookings/new">
+                <Plus aria-hidden /> New booking
+              </Link>
+            </Button>
+          </>
         }
       />
 
@@ -93,7 +140,11 @@ export function BookingsPage() {
                 to={`/bookings/${b.booking_id}`}
                 className="flex items-start gap-3 rounded-lg border bg-card p-3 hover:bg-muted/50"
               >
-                <span className="mt-1.5 size-2.5 shrink-0 rounded-full" style={{ background: b.channel_color ?? undefined }} aria-hidden />
+                <span
+                  className="mt-1.5 size-2.5 shrink-0 rounded-full"
+                  style={{ background: b.channel_color ?? undefined }}
+                  aria-hidden
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className={b.status === 'cancelled' ? 'font-medium line-through opacity-60' : 'font-medium'}>

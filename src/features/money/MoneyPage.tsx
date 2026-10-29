@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { useQuery } from '@tanstack/react-query'
-import { Paperclip, Plus } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Paperclip, Plus, Sheet } from 'lucide-react'
+import { toast } from 'sonner'
+import { useAuth } from '@/app/auth'
+import { downloadCsv } from '@/lib/csv'
+import { Input } from '@/components/ui/input'
 import { useExpenses, useLedger, useVendorBalances } from './api'
 import { ForwardPayoutsDialog, type HeldRow } from './ForwardPayoutsDialog'
 import { MarkReceivedDialog, type PendingPayout } from './MarkReceivedDialog'
@@ -86,7 +90,9 @@ function IncomingTab() {
       unwrap(
         await supabase
           .from('payment_facts')
-          .select('id, booking_id, kind, currency, amount_due, due_date, status, amount_received, received_date, received_by_partner_id, held_by_partner, bookings(ref, status, check_out, guests(name))')
+          .select(
+            'id, booking_id, kind, currency, amount_due, due_date, status, amount_received, received_date, received_by_partner_id, held_by_partner, bookings(ref, status, check_out, guests(name))',
+          )
           .order('due_date', { ascending: true, nullsFirst: false }),
       ),
   })
@@ -101,8 +107,12 @@ function IncomingTab() {
     setParams(n, { replace: true })
   }
   // the date a row belongs to: when money already in hand arrived, otherwise when it is due
-  const rowDate = (p: { held_by_partner: boolean | null; status: string | null; received_date: string | null; due_date: string | null }) =>
-    p.held_by_partner || p.status === 'received' ? p.received_date : p.due_date
+  const rowDate = (p: {
+    held_by_partner: boolean | null
+    status: string | null
+    received_date: string | null
+    due_date: string | null
+  }) => (p.held_by_partner || p.status === 'received' ? p.received_date : p.due_date)
   const rows = (q.data ?? []).filter((p) => {
     if (month && !rowDate(p)?.startsWith(month)) return false
     const b = p.bookings
@@ -139,7 +149,10 @@ function IncomingTab() {
       .sort((a, b) => b.received_date!.localeCompare(a.received_date!))[0]?.received_by_partner_id ?? null
   // USD payouts a partner received and has not forwarded yet, oldest first
   const held: HeldRow[] = (q.data ?? [])
-    .filter((p) => p.held_by_partner && p.currency === 'USD' && p.bookings && !['cancelled', 'no_show', 'fraud'].includes(p.bookings.status))
+    .filter(
+      (p) =>
+        p.held_by_partner && p.currency === 'USD' && p.bookings && !['cancelled', 'no_show', 'fraud'].includes(p.bookings.status),
+    )
     .map((p) => ({
       id: p.id!,
       usd: Number(p.amount_received),
@@ -166,12 +179,7 @@ function IncomingTab() {
           All
         </Button>
         {Object.entries(SHOW).map(([k, v]) => (
-          <Button
-            key={k}
-            size="sm"
-            variant={show === k ? 'secondary' : 'outline'}
-            onClick={() => setParam('show', k)}
-          >
+          <Button key={k} size="sm" variant={show === k ? 'secondary' : 'outline'} onClick={() => setParam('show', k)}>
             {v.label}
           </Button>
         ))}
@@ -216,7 +224,10 @@ function IncomingTab() {
         )}
       </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-        <Stat label={`Total${month ? ` for ${formatDate(`${month}-01`).slice(2)}` : ''} (${rows.length})`} hint={deposits ? 'Collected minus refunded and withheld' : undefined}>
+        <Stat
+          label={`Total${month ? ` for ${formatDate(`${month}-01`).slice(2)}` : ''} (${rows.length})`}
+          hint={deposits ? 'Collected minus refunded and withheld' : undefined}
+        >
           <Money amount={combined} currency="PKR" estimate={totals.USD !== 0} />
         </Stat>
         {totals.PKR !== 0 && (
@@ -230,6 +241,28 @@ function IncomingTab() {
           </Stat>
         )}
       </div>
+      <Button
+        variant="outline"
+        size="sm"
+        className="self-start"
+        onClick={() =>
+          downloadCsv(`Incoming${month ? ' ' + month : ''}`, [
+            ['Guest', 'Kind', 'Currency', 'Amount', 'Status', 'Due', 'Received', 'Held by'],
+            ...rows.map((p) => [
+              p.bookings?.guests?.name ?? p.bookings?.ref,
+              PAYMENT_KIND_LABELS[p.kind as PaymentKind],
+              p.currency,
+              signed(p),
+              p.status,
+              p.due_date,
+              p.received_date,
+              p.held_by_partner ? partnerName(p.received_by_partner_id) : '',
+            ]),
+          ])
+        }
+      >
+        <Sheet aria-hidden /> CSV
+      </Button>
       {deposits && (
         <p className="text-sm text-muted-foreground">
           Deposits are refundable and never revenue. Received ones are held until refunded or withheld.
@@ -258,7 +291,10 @@ function IncomingTab() {
                     </span>
                   </span>
                   <span className={cn('text-right', overdue && 'text-destructive')}>
-                    <Money amount={p.status === 'received' ? p.amount_received : p.amount_due} currency={p.currency as 'PKR' | 'USD'} />
+                    <Money
+                      amount={p.status === 'received' ? p.amount_received : p.amount_due}
+                      currency={p.currency as 'PKR' | 'USD'}
+                    />
                     {overdue && <span className="block text-xs">overdue</span>}
                   </span>
                 </Link>
@@ -366,13 +402,19 @@ function SetupTab() {
     }
     return [...m.entries()]
   }, [q.data])
-  const total = byCategory.reduce((a, [, v]) => ({ budget: a.budget + v.budget, actual: a.actual + v.actual }), { budget: 0, actual: 0 })
+  const total = byCategory.reduce((a, [, v]) => ({ budget: a.budget + v.budget, actual: a.actual + v.actual }), {
+    budget: 0,
+    actual: 0,
+  })
 
   if (q.isPending) return <Loading />
   return (
     <div className="flex flex-col gap-4">
       <ErrorNote error={q.error} />
-      <p className="text-sm text-muted-foreground">Setup costs are capital: they stay out of the P&amp;L. Paid personally by a partner, they count as that partner's investment.</p>
+      <p className="text-sm text-muted-foreground">
+        Setup costs are capital: they stay out of the P&amp;L. Paid personally by a partner, they count as that partner's
+        investment.
+      </p>
       <Card>
         <CardHeader>
           <CardTitle>Budget vs actual</CardTitle>
@@ -423,7 +465,11 @@ function SetupTab() {
                   </span>
                   <span className="text-right">
                     <Money amount={v.remaining} currency="PKR" />
-                    {Number(v.remaining) < 0 && <Badge variant="warning" className="ml-2">overpaid: review</Badge>}
+                    {Number(v.remaining) < 0 && (
+                      <Badge variant="warning" className="ml-2">
+                        overpaid: review
+                      </Badge>
+                    )}
                   </span>
                 </li>
               ))}
@@ -461,6 +507,24 @@ function AccountTab() {
       <Stat label="Project account balance" hint="Contributions + money received - expenses - reimbursements - distributions">
         <Money amount={balance} currency="PKR" />
       </Stat>
+      <BankCheck ledger={q.data ?? []} />
+      {(q.data?.length ?? 0) > 0 && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="self-start"
+          onClick={() =>
+            downloadCsv('Project account ledger', [
+              ['Date', 'Kind', 'Description', 'Amount (PKR)', 'Balance (PKR)'],
+              ...[...(q.data ?? [])]
+                .reverse()
+                .map((e) => [e.entry_date, KIND_LABEL[e.kind!] ?? e.kind, e.description, Number(e.amount), Number(e.balance)]),
+            ])
+          }
+        >
+          <Sheet aria-hidden /> Export CSV
+        </Button>
+      )}
       {q.data?.length ? (
         <ul className="divide-y rounded-lg border bg-card text-sm">
           {q.data.map((e) => (
@@ -487,29 +551,209 @@ function AccountTab() {
   )
 }
 
+type LedgerRow = NonNullable<ReturnType<typeof useLedger>['data']>[number]
+
+/** Rule 14: the owner enters the real bank balance on a date; the difference to the ledger shows. */
+function BankCheck({ ledger }: { ledger: LedgerRow[] }) {
+  const { member } = useAuth()
+  const owner = member?.role === 'owner'
+  const qc = useQueryClient()
+  const [date, setDate] = useState(pkToday())
+  const [amount, setAmount] = useState('')
+  const [notes, setNotes] = useState('')
+  const checks = useQuery({
+    queryKey: ['bank_balances'],
+    queryFn: async () =>
+      unwrap(
+        await supabase
+          .from('bank_balances')
+          .select('*')
+          .is('deleted_at', null)
+          .order('balance_date', { ascending: false })
+          .limit(12),
+      ),
+  })
+  // ledger balance at the end of a day, from the same ledger rows shown below (cents, exact)
+  const ledgerAt = (d: string) =>
+    ledger.filter((e) => e.entry_date! <= d).reduce((a, e) => a + Math.round(Number(e.amount) * 100), 0) / 100
+  const add = useMutation({
+    mutationFn: async () => {
+      if (amount === '' || Number.isNaN(Number(amount))) throw new Error('Enter the balance shown by the bank')
+      return unwrap(
+        await supabase
+          .from('bank_balances')
+          .insert({ balance_date: date, amount: Number(amount), notes: notes || null })
+          .select('id')
+          .single(),
+      )
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['bank_balances'] })
+      setAmount('')
+      setNotes('')
+      toast.success('Bank balance recorded')
+    },
+  })
+  const latest = checks.data?.[0]
+  const latestDiff = latest ? Math.round((Number(latest.amount) - ledgerAt(latest.balance_date)) * 100) / 100 : null
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Bank check</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3 text-sm">
+        <p className="text-muted-foreground">
+          Enter what the bank shows for the project account on a date. A difference usually means something is not recorded yet (a
+          payment, an expense, a transfer) or was recorded with the wrong date or amount.
+        </p>
+        {latest && (
+          <p className={cn('rounded-md p-3', latestDiff === 0 ? 'bg-emerald-500/10' : 'bg-amber-500/15')}>
+            {latestDiff === 0 ? (
+              <>Matches the bank on {formatDate(latest.balance_date)}.</>
+            ) : (
+              <>
+                On {formatDate(latest.balance_date)} the bank shows <Money amount={latest.amount} currency="PKR" />, the app{' '}
+                <Money amount={ledgerAt(latest.balance_date)} currency="PKR" />: a difference of{' '}
+                <strong>
+                  <Money amount={latestDiff} currency="PKR" />
+                </strong>{' '}
+                ({Number(latestDiff) > 0 ? 'more in the bank than recorded' : 'less in the bank than recorded'}).
+              </>
+            )}
+          </p>
+        )}
+        {owner && (
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <Input
+              type="date"
+              aria-label="Bank balance date"
+              value={date}
+              max={pkToday()}
+              onChange={(e) => setDate(e.target.value)}
+            />
+            <Input
+              type="number"
+              inputMode="decimal"
+              step="any"
+              aria-label="Bank balance (PKR)"
+              placeholder="Balance (PKR)"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+            <Input aria-label="Notes" placeholder="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
+            <Button onClick={() => add.mutate()} disabled={add.isPending}>
+              Record
+            </Button>
+          </div>
+        )}
+        <ErrorNote error={add.error ?? checks.error} />
+        {(checks.data?.length ?? 0) > 0 && (
+          <ul className="divide-y rounded-md border">
+            {checks.data!.map((c) => {
+              const app = ledgerAt(c.balance_date)
+              const diff = Math.round((Number(c.amount) - app) * 100) / 100
+              return (
+                <li key={c.id} className="flex flex-wrap justify-between gap-2 px-3 py-2">
+                  <span>
+                    {formatDate(c.balance_date)}
+                    {c.notes && <span className="block text-xs text-muted-foreground">{c.notes}</span>}
+                  </span>
+                  <span className="text-right text-xs">
+                    Bank <Money amount={c.amount} currency="PKR" /> · App <Money amount={app} currency="PKR" />
+                    <span
+                      className={cn(
+                        'block font-medium',
+                        diff === 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300',
+                      )}
+                    >
+                      {diff === 0 ? (
+                        'matches'
+                      ) : (
+                        <>
+                          difference <Money amount={diff} currency="PKR" />
+                        </>
+                      )}
+                    </span>
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 type ExpenseRow = NonNullable<ReturnType<typeof useExpenses>['data']>[number]
 
 function ExpenseList({ rows, partnerName }: { rows: ExpenseRow[]; partnerName: (id: string | null) => string }) {
   return (
-    <ul className="divide-y rounded-lg border bg-card text-sm">
-      {rows.map((e) => (
-        <li key={e.id}>
-          <Link to={`/money/expenses/${e.id}`} className="flex justify-between gap-3 p-3 hover:bg-muted/50">
-            <span className="min-w-0">
-              <span className="flex flex-wrap items-center gap-2 font-medium">
-                {e.item}
-                {e.status === 'due' && <StatusBadge status="due" />}
-                {e.receipt_path && <Paperclip className="size-3.5 text-muted-foreground" aria-label="Receipt attached" />}
+    <div className="flex flex-col gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        className="self-end"
+        onClick={() =>
+          downloadCsv('Expenses', [
+            [
+              'Date',
+              'Kind',
+              'Category',
+              'Item',
+              'Vendor',
+              'Amount',
+              'Currency',
+              'Budget',
+              'Status',
+              'Paid on',
+              'Paid by',
+              'Reimbursable',
+              'Reimbursed on',
+              'Notes',
+            ],
+            ...rows.map((e) => [
+              e.expense_date,
+              e.kind,
+              e.category,
+              e.item,
+              e.vendor,
+              Number(e.amount),
+              e.currency,
+              e.budget_amount,
+              e.status,
+              e.paid_date,
+              partnerName(e.paid_by_partner_id),
+              e.reimbursable ? 'yes' : 'no',
+              e.reimbursed_date,
+              e.notes,
+            ]),
+          ])
+        }
+      >
+        <Sheet aria-hidden /> CSV
+      </Button>
+      <ul className="divide-y rounded-lg border bg-card text-sm">
+        {rows.map((e) => (
+          <li key={e.id}>
+            <Link to={`/money/expenses/${e.id}`} className="flex justify-between gap-3 p-3 hover:bg-muted/50">
+              <span className="min-w-0">
+                <span className="flex flex-wrap items-center gap-2 font-medium">
+                  {e.item}
+                  {e.status === 'due' && <StatusBadge status="due" />}
+                  {e.receipt_path && <Paperclip className="size-3.5 text-muted-foreground" aria-label="Receipt attached" />}
+                </span>
+                <span className="block truncate text-xs text-muted-foreground">
+                  {formatDate(e.expense_date)} · {e.category} · {partnerName(e.paid_by_partner_id)}
+                  {e.vendor ? ` · ${e.vendor}` : ''}
+                </span>
               </span>
-              <span className="block truncate text-xs text-muted-foreground">
-                {formatDate(e.expense_date)} · {e.category} · {partnerName(e.paid_by_partner_id)}
-                {e.vendor ? ` · ${e.vendor}` : ''}
-              </span>
-            </span>
-            <Money amount={e.amount} currency={e.currency} />
-          </Link>
-        </li>
-      ))}
-    </ul>
+              <Money amount={e.amount} currency={e.currency} />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
