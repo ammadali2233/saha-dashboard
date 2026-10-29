@@ -420,24 +420,44 @@ function AutomationCard({ owner }: { owner: boolean }) {
       )
     },
   })
+  const digest = useMutation({
+    mutationFn: async () => {
+      const { data } = await supabase.auth.getSession()
+      const res = await fetch('/api/digest-now', { method: 'POST', headers: { authorization: `Bearer ${data.session?.access_token ?? ''}` } })
+      if (!res.ok) throw new Error(res.status === 404 ? 'Emails are sent from the deployed site (Netlify), not in local dev.' : await res.text())
+      const out = (await res.json()) as { skipped?: string; error?: string; sent?: number }
+      if (out.skipped) throw new Error(`Not set up yet: ${out.skipped} in Netlify.`)
+      if (out.error) throw new Error(out.error)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['sync_runs'] })
+      toast.success("Today's digest sent to your email")
+    },
+  })
   return (
     <Card>
       <SectionHeader
         title="Automation"
         action={
-          owner && (
-            <Button variant="outline" size="sm" onClick={() => run.mutate()} disabled={run.isPending}>
-              {run.isPending ? 'Running…' : 'Run daily jobs now'}
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => digest.mutate()} disabled={digest.isPending}>
+              {digest.isPending ? 'Sending…' : "Send me today's digest"}
             </Button>
-          )
+            {owner && (
+              <Button variant="outline" size="sm" onClick={() => run.mutate()} disabled={run.isPending}>
+                {run.isPending ? 'Running…' : 'Run daily jobs now'}
+              </Button>
+            )}
+          </div>
         }
       />
       <CardContent>
         <p className="mb-2 text-sm text-muted-foreground">
           Every night after 00:05 Karachi time: check-ins and check-outs roll forward, payments become due or overdue, booking
-          tasks are created and recurring bills are generated. Calendar sync runs hourly.
+          tasks are created and recurring bills are generated. Calendar sync runs hourly. At 08:00 the owner and partners get a
+          morning email: check-ins and check-outs, pending tasks, money due and alerts.
         </p>
-        <ErrorNote error={run.error ?? runs.error} />
+        <ErrorNote error={run.error ?? runs.error ?? digest.error} />
         <ul className="divide-y text-sm">
           {runs.data?.map((r) => (
             <li key={r.id} className="flex flex-wrap justify-between gap-2 py-1.5">

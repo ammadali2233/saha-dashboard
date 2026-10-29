@@ -23,7 +23,7 @@ npm run lint
 - `src/domain/` pure TS business rules (shared by UI previews and Netlify functions). Every rule has a Vitest test.
 - `supabase/migrations/` the schema; SQL views are the reporting source of truth. Never edit an applied migration: add a new one.
 - `supabase/tests/` pgTAP tests. `netlify/functions/` server jobs (service role key lives only here).
-- `netlify/functions/`: daily-jobs (cron 19:05 UTC), ical-import (hourly), ical-sync-now, ical-export (/ical/<token>/direct.ics|all.ics), quote-pdf. Shared code in `netlify/lib/` (service-role client, pure iCal rules with tests).
+- `netlify/functions/`: daily-jobs (cron 19:05 UTC), ical-import (hourly), backup (20:00 UTC), sheet-mirror (20:15 UTC), daily-digest (03:00 UTC = 08:00 PKT), plus on-demand ical-sync-now, ical-export (/ical/<token>/direct.ics|all.ics), quote-pdf, pnl-pdf, partner-statement, backup-now, digest-now. Shared code in `netlify/lib/` (service-role client, pure iCal rules with tests).
 - `scripts/import-sheet/` one-off migration from the Google Sheet `.xlsx` export in `/import` (gitignored).
 
 ## Working rules
@@ -63,6 +63,9 @@ npm run lint
 - Overview: occupancy, completed nights and ADR count nights from go-live (5 Oct 2026). "Operating costs this month" is by expense date (incurred), the cash P&L uses paid date.
 - Payments: saving a booking creates its expected rows (platform payout, or direct advance/balance/deposit) via `ensure_payment_schedule`; accepting a quote uses the quote's own terms.
 - iCal: matched by confirmation code, then UID, then exact dates. Holds that only echo our own bookings/blocks are skipped. Disappeared reservations are flagged, never cancelled.
+- Reports: P&L accrual/cash from the monthly views; channel mix by night; booking stats by check-in month (lead time only for bookings with booked_at). Chart colours: validated categorical palette per channel code (light and dark steps).
+- Partner statements (src/domain/statement.ts): position at month end + that month's cash P&L; reimbursements made after month end still count as owed at month end.
+- Backups: nightly JSON snapshot (no channel_secrets, no logs), 30 days; restore with scripts/restore-backup.ts (upsert by id, never deletes, pauses our triggers per table).
 - Performance budget: keep form/schema libraries, FullCalendar and date libraries out of the first load (lazy routes, `manualChunks`); the sign-in page must stay above 90 on Lighthouse mobile.
 
 ## Hard constraints
