@@ -49,3 +49,27 @@ describe('morning digest', () => {
     expect(quiet.text).toContain('TASKS: DUE TODAY\n- Nothing due today')
   })
 })
+
+describe('sending', () => {
+  it('sends replies to DIGEST_REPLY_TO when set, so the domain needs no inbox', async () => {
+    const { sendEmail } = await import('./digest')
+    let body: Record<string, unknown> = {}
+    const realFetch = globalThis.fetch
+    globalThis.fetch = (async (_u: string, init: RequestInit) => {
+      body = JSON.parse(String(init.body))
+      return new Response('{}', { status: 200 })
+    }) as typeof fetch
+    process.env.RESEND_API_KEY = 'test'
+    process.env.DIGEST_FROM = 'DHA Retreat <digest@example.com>'
+    process.env.DIGEST_REPLY_TO = 'owner@example.com'
+    try {
+      await sendEmail('partner@example.com', { subject: 's', html: 'h', text: 't' })
+    } finally {
+      globalThis.fetch = realFetch
+      delete process.env.RESEND_API_KEY
+      delete process.env.DIGEST_FROM
+      delete process.env.DIGEST_REPLY_TO
+    }
+    expect(body).toMatchObject({ from: 'DHA Retreat <digest@example.com>', to: ['partner@example.com'], reply_to: 'owner@example.com' })
+  })
+})
