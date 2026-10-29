@@ -15,6 +15,7 @@ import { Field, Select } from '@/components/ui/form-controls'
 import { Input } from '@/components/ui/input'
 import { formatDate, formatTimestamp } from '@/domain/format'
 import { IcalSettings } from './IcalSettings'
+import { BackupsCard } from './BackupsCard'
 
 // ---------------------------------------------------------------- a small generic edit dialog
 type FieldDef = {
@@ -131,6 +132,7 @@ export function SettingsPage() {
       <ChannelsCard owner={owner} />
       <IcalSettings owner={owner} />
       <AutomationCard owner={owner} />
+      <BackupsCard owner={owner} />
       <PeopleCard owner={owner} />
       <Card>
         <CardHeader className="flex-row items-center justify-between">

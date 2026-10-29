@@ -61,6 +61,21 @@ Settings → Calendar feeds → **Revoke** the old link (it stops working at onc
 ## Daily jobs
 Netlify runs `daily-jobs` at 19:05 UTC (00:05 Karachi): check-ins/check-outs, payments due/overdue, booking tasks, recurring bills. The owner can also run it from Settings → Automation. Every run is logged there.
 
+## Backups and restoring
+- **Nightly (01:00 Karachi):** a JSON snapshot of every business table goes to Supabase Storage (bucket `backups`, file `YYYY-MM-DD.json`, kept 30 days), then the read-only Google Sheet copy is refreshed. Settings → Backups shows the last runs, lets the owner download any snapshot, and has **Back up now**. iCal links and logs are not in snapshots.
+- **Google Sheet copy:** set `GOOGLE_SERVICE_ACCOUNT_JSON` (the service account's JSON key) and `GOOGLE_MIRROR_SHEET_ID` in Netlify, and share the sheet with the service account's email as Editor. Tabs are overwritten nightly.
+
+### Restoring from a backup snapshot
+1. Settings → Backups → **Download** the snapshot you want (or download it from Supabase Storage → `backups`).
+2. Dry run (shows rows in the backup vs the database, changes nothing):
+```bash
+npx tsx scripts/restore-backup.ts --file 2026-10-30.json --target linked
+```
+3. Restore:
+```bash
+npx tsx scripts/restore-backup.ts --file 2026-10-30.json --target linked --apply
+```
+Every row in the snapshot is put back exactly (inserted or overwritten) in one transaction; nothing created after the snapshot is deleted. It also works on a brand-new Supabase project: run `npx supabase db push` first so the tables exist, then restore. Use `--target local` to try it on your local copy first.
+
 ## To be documented as features land
 - Running the Airbnb CSV import (Phase 3)
-- Restoring from a backup snapshot (Phase 3)
