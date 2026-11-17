@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { unwrap } from '@/lib/queries'
 import { useAuth } from '@/app/auth'
 import { EmptyState, ErrorNote, Loading, Money } from '@/components/common'
+import type { Database } from '@/lib/database.types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { addDays } from '@/domain/booking'
 import { formatDate, pkToday } from '@/domain/format'
@@ -32,10 +33,6 @@ export function OverviewPage() {
   const nextMonth = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`
   const [exclude, setExclude] = useState(readExclude)
 
-  const kpis = useQuery({
-    queryKey: ['overview_kpis', exclude],
-    queryFn: async () => unwrap(await supabase.rpc('overview_kpis', { p_exclude_nonstandard: exclude }))[0],
-  })
   const alerts = useQuery({
     queryKey: ['alerts'],
     queryFn: async () => unwrap(await supabase.from('alerts').select('*').order('alert_date', { ascending: true })),
@@ -75,7 +72,6 @@ export function OverviewPage() {
     }
   }
 
-  const k = kpis.data
   const events = (movements.data ?? [])
     .flatMap((b) => [
       ...(b.check_in! >= today && b.check_in! <= addDays(today, 7) ? [{ date: b.check_in!, type: 'in' as const, b }] : []),
@@ -96,52 +92,93 @@ export function OverviewPage() {
         </label>
       </div>
 
-      <ErrorNote error={kpis.error} />
-      {kpis.isPending ? (
-        <Loading />
-      ) : (
-        k && (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-            <Kpi to={`/calendar?date=${thisMonth}-01`} label={`Occupancy ${monthName(today)}`} hint={`${k.occ_this_occupied}/${k.occ_this_available} nights · ${k.occ_this_completed} completed`}>
-              {pct(k.occ_this_rate)}
-            </Kpi>
-            <Kpi to={`/calendar?date=${nextMonth}-01`} label={`Occupancy ${monthName(`${nextMonth}-01`)}`} hint={`${k.occ_next_occupied}/${k.occ_next_available} nights on the books`}>
-              {pct(k.occ_next_rate)}
-            </Kpi>
-            <MonthOccupancy exclude={exclude} initial={nextMonth} />
-            <Kpi to={`/bookings?month=${thisMonth}`} label="ADR this month" hint="Net revenue per occupied night">
-              <Money amount={k.adr_this_pkr} currency="PKR" estimate={!!k.adr_has_estimates} />
-            </Kpi>
-            <Kpi to="/money?tab=account" label="Realized revenue" hint={<>This month <Money amount={k.realized_mtd_pkr} currency="PKR" /></>}>
-              <Money amount={k.realized_to_date_pkr} currency="PKR" />
-            </Kpi>
-            <Kpi to={`/money?tab=operating&month=${thisMonth}`} label="Operating costs this month">
-              <Money amount={k.opex_mtd_pkr} currency="PKR" />
-            </Kpi>
-            <Kpi to="/partners" label="Realized net profit to date" hint="Cash in minus paid operating costs">
-              <Money amount={k.realized_net_profit_pkr} currency="PKR" />
-            </Kpi>
-            <Kpi to="/money?tab=account" label="Project account">
-              <Money amount={k.project_balance_pkr} currency="PKR" />
-            </Kpi>
-            <Kpi to="/bookings?status=confirmed" label="On the books" hint="Confirmed and in-house stays, not yet earned">
-              <Money amount={k.on_the_books_pkr} currency="PKR" estimate={!!k.on_the_books_has_estimates} />
-            </Kpi>
-            <Kpi to="/money?tab=incoming&show=payouts" label="Pending payouts" hint={`${k.pending_payouts_count} payout${k.pending_payouts_count === 1 ? '' : 's'}, incl. held by partners`}>
-              <Money amount={k.pending_payouts_pkr_est} currency="PKR" estimate />
-            </Kpi>
-            <Kpi to="/money?tab=incoming&show=guests" label="Due from direct guests">
-              <Money amount={k.guest_balances_due_pkr} currency="PKR" />
-            </Kpi>
-            <Kpi to="/money?tab=incoming&show=deposits" label="Deposits held" hint="Refundable: not revenue">
-              <Money amount={k.deposits_held_pkr} currency="PKR" />
-            </Kpi>
-            <Kpi to="/partners" label="Capital recovered" hint={<>of <Money amount={k.total_invested_pkr} currency="PKR" /> invested</>}>
-              {pct(k.capital_recovered_pct)}
-            </Kpi>
-          </div>
-        )
-      )}
+      {/* every tile has its own period: a month, or the total so far */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+        <Kpi label="Occupancy" initial={thisMonth} exclude={exclude}>
+          {(k, p) => ({
+            to: `/calendar?date=${p === 'all' ? today : `${p}-01`}`,
+            value: pct(k.occ_rate),
+            hint: `${k.occupied}/${k.available} nights${p === 'all' ? ' since go-live' : ''} · ${k.completed_nights} completed`,
+          })}
+        </Kpi>
+        <Kpi label="Occupancy" initial={nextMonth} exclude={exclude}>
+          {(k, p) => ({
+            to: `/calendar?date=${p === 'all' ? today : `${p}-01`}`,
+            value: pct(k.occ_rate),
+            hint: `${k.occupied}/${k.available} nights${p === 'all' ? ' since go-live' : ''} · ${k.completed_nights} completed`,
+          })}
+        </Kpi>
+        <Kpi label="ADR" initial={thisMonth} exclude={exclude}>
+          {(k, p) => ({
+            to: p === 'all' ? '/bookings' : `/bookings?month=${p}`,
+            value: <Money amount={k.adr_pkr} currency="PKR" estimate={!!k.adr_has_estimates} />,
+            hint: 'Net revenue per occupied night',
+          })}
+        </Kpi>
+        <Kpi label="Realized revenue" initial="all" exclude={exclude}>
+          {(k, p) => ({
+            to: p === 'all' ? '/money?tab=incoming' : `/money?tab=incoming&month=${p}`,
+            value: <Money amount={k.realized_pkr} currency="PKR" />,
+            hint: 'Cash received, in PKR',
+          })}
+        </Kpi>
+        <Kpi label="Operating costs" initial={thisMonth} exclude={exclude}>
+          {(k, p) => ({
+            to: p === 'all' ? '/money?tab=operating' : `/money?tab=operating&month=${p}`,
+            value: <Money amount={k.opex_pkr} currency="PKR" />,
+            hint: <>Incurred · paid <Money amount={k.opex_paid_pkr} currency="PKR" /></>,
+          })}
+        </Kpi>
+        <Kpi label="Realized net profit" initial="all" exclude={exclude}>
+          {(k) => ({
+            to: '/partners',
+            value: <Money amount={k.net_profit_pkr} currency="PKR" />,
+            hint: 'Cash in minus paid operating costs',
+          })}
+        </Kpi>
+        <Kpi label="Project account" initial="all" exclude={exclude}>
+          {(k) => ({
+            to: '/money?tab=account',
+            value: <Money amount={k.project_balance_pkr} currency="PKR" />,
+            hint: `As at ${formatDate(k.as_of)}`,
+          })}
+        </Kpi>
+        <Kpi label="On the books" initial="all" exclude={exclude}>
+          {(k, p) => ({
+            to: '/bookings?status=confirmed',
+            value: <Money amount={k.on_the_books_pkr} currency="PKR" estimate={!!k.on_the_books_has_estimates} />,
+            hint: p === 'all' ? 'Confirmed stays, not yet earned' : 'Booked nights in this month',
+          })}
+        </Kpi>
+        <Kpi label="Pending payouts" initial="all" exclude={exclude}>
+          {(k, p) => ({
+            to: '/money?tab=incoming&show=payouts',
+            value: <Money amount={k.pending_payouts_pkr_est} currency="PKR" estimate />,
+            hint: `${k.pending_payouts_count} payout${k.pending_payouts_count === 1 ? '' : 's'}${p === 'all' ? ', incl. held by partners' : ' expected this month'}`,
+          })}
+        </Kpi>
+        <Kpi label="Due from direct guests" initial="all" exclude={exclude}>
+          {(k, p) => ({
+            to: '/money?tab=incoming&show=guests',
+            value: <Money amount={k.guest_balances_due_pkr} currency="PKR" />,
+            hint: p === 'all' ? 'All unpaid guest payments' : 'Falling due this month',
+          })}
+        </Kpi>
+        <Kpi label="Deposits held" initial="all" exclude={exclude}>
+          {(k) => ({
+            to: '/money?tab=incoming&show=deposits',
+            value: <Money amount={k.deposits_held_pkr} currency="PKR" />,
+            hint: `Refundable, not revenue · as at ${formatDate(k.as_of)}`,
+          })}
+        </Kpi>
+        <Kpi label="Capital recovered" initial="all" exclude={exclude}>
+          {(k) => ({
+            to: '/partners',
+            value: pct(k.capital_recovered_pct),
+            hint: <>of <Money amount={k.total_invested_pkr} currency="PKR" /> invested · as at {formatDate(k.as_of)}</>,
+          })}
+        </Kpi>
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
@@ -239,49 +276,82 @@ export function OverviewPage() {
   )
 }
 
-/** Occupancy for any month the user picks (same rules as the tiles above: from go-live, capped at 100%). */
-function MonthOccupancy({ exclude, initial }: { exclude: boolean; initial: string }) {
-  const [month, setMonth] = useState(initial)
-  const [y, m] = month.split('-').map(Number) as [number, number]
-  const start = `${month}-01`
-  const end = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, '0')}-01`
-  const q = useQuery({
-    queryKey: ['occupancy_month', month, exclude],
-    enabled: /^\d{4}-\d{2}$/.test(month),
-    queryFn: async () =>
-      unwrap(await supabase.rpc('occupancy_stats', { p_start: start, p_end: end, p_exclude_nonstandard: exclude }))[0],
-  })
-  return (
-    <div className="rounded-lg border bg-card p-3">
-      <label className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-        Occupancy for
-        <input
-          type="month"
-          value={month}
-          onChange={(e) => e.target.value && setMonth(e.target.value)}
-          className="h-8 min-w-0 rounded-md border bg-card px-1 text-xs text-foreground"
-          aria-label="Month to show occupancy for"
-        />
-      </label>
-      <Link to={`/calendar?date=${start}`} className="block">
-        <p className="mt-1 text-lg font-semibold">{q.isPending ? '…' : pct(q.data?.rate)}</p>
-        <p className="text-xs text-muted-foreground">
-          {q.data ? `${q.data.occupied}/${q.data.available} nights · ${monthName(start)} ${y}` : q.error ? 'Could not load' : ' '}
-        </p>
-      </Link>
-    </div>
-  )
+type Period = 'all' | string // 'all' = total so far, else 'YYYY-MM'
+type PeriodKpis = Database['public']['Functions']['kpi_period']['Returns'][number]
+
+// first month with stays: live since 5 Oct 2026
+const FIRST_MONTH = '2026-10'
+
+const addMonths = (ym: string, n: number) => {
+  const [y, m] = ym.split('-').map(Number) as [number, number]
+  const d = new Date(Date.UTC(y, m - 1 + n, 1))
+  return d.toISOString().slice(0, 7)
 }
 
-function Kpi({ to, label, hint, children }: { to: string; label: string; hint?: ReactNode; children: ReactNode }) {
+/** "Total so far", then every month from go-live to 6 months ahead, newest first. */
+function periodOptions(thisMonth: string) {
+  const out: { value: Period; label: string }[] = []
+  for (let ym = addMonths(thisMonth, 6); ym >= FIRST_MONTH; ym = addMonths(ym, -1)) {
+    out.push({ value: ym, label: `${monthName(`${ym}-01`).slice(0, 3)} ${ym.slice(0, 4)}` })
+  }
+  return [{ value: 'all', label: 'Total so far' }, ...out]
+}
+
+/** Figures for one period; tiles showing the same period share the request. */
+function usePeriodKpis(period: Period, exclude: boolean) {
+  return useQuery({
+    // prefix kept so saves elsewhere that invalidate 'overview_kpis' refresh these too
+    queryKey: ['overview_kpis', 'period', period, exclude],
+    queryFn: async () =>
+      unwrap(
+        await supabase.rpc('kpi_period', {
+          p_month: period === 'all' ? undefined : `${period}-01`,
+          p_exclude_nonstandard: exclude,
+        }),
+      )[0],
+  })
+}
+
+function Kpi({
+  label,
+  initial,
+  exclude,
+  children,
+}: {
+  label: string
+  initial: Period
+  exclude: boolean
+  children: (k: PeriodKpis, period: Period) => { to: string; value: ReactNode; hint?: ReactNode }
+}) {
+  const [period, setPeriod] = useState<Period>(initial)
+  const q = usePeriodKpis(period, exclude)
+  const shown = q.data ? children(q.data, period) : null
   return (
-    <Link to={to} className="group rounded-lg border bg-card p-3 hover:border-ring">
-      <p className="flex items-center justify-between text-xs text-muted-foreground">
-        {label}
-        <ArrowRight className="size-3 opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
-      </p>
-      <p className="mt-1 text-lg font-semibold">{children}</p>
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-    </Link>
+    <div className="flex flex-col rounded-lg border bg-card p-3 has-[a:hover]:border-ring">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <select
+        value={period}
+        onChange={(e) => setPeriod(e.target.value)}
+        className="mt-1 h-8 w-full min-w-0 rounded-md border bg-card px-1 text-xs"
+        aria-label={`Period for ${label}`}
+      >
+        {periodOptions(pkToday().slice(0, 7)).map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+      {shown ? (
+        <Link to={shown.to} className="group mt-1 block flex-1">
+          <p className="flex items-center justify-between text-lg font-semibold">
+            {shown.value}
+            <ArrowRight className="size-3 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" aria-hidden />
+          </p>
+          {shown.hint && <p className="text-xs text-muted-foreground">{shown.hint}</p>}
+        </Link>
+      ) : (
+        <p className="mt-1 text-lg font-semibold text-muted-foreground">{q.error ? 'Could not load' : '…'}</p>
+      )}
+    </div>
   )
 }
