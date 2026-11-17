@@ -29,8 +29,6 @@ export function OverviewPage() {
   const { member } = useAuth()
   const today = pkToday()
   const thisMonth = today.slice(0, 7)
-  const [y, m] = thisMonth.split('-').map(Number) as [number, number]
-  const nextMonth = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, '0')}`
   const [exclude, setExclude] = useState(readExclude)
 
   const alerts = useQuery({
@@ -95,13 +93,6 @@ export function OverviewPage() {
       {/* every tile has its own period: a month, or the total so far */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
         <Kpi label="Occupancy" initial={thisMonth} exclude={exclude}>
-          {(k, p) => ({
-            to: `/calendar?date=${p === 'all' ? today : `${p}-01`}`,
-            value: pct(k.occ_rate),
-            hint: `${k.occupied}/${k.available} nights${p === 'all' ? ' since go-live' : ''} · ${k.completed_nights} completed`,
-          })}
-        </Kpi>
-        <Kpi label="Occupancy" initial={nextMonth} exclude={exclude}>
           {(k, p) => ({
             to: `/calendar?date=${p === 'all' ? today : `${p}-01`}`,
             value: pct(k.occ_rate),
