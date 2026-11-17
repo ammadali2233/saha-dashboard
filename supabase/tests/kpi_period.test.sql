@@ -65,6 +65,21 @@ select is((select as_of from public.kpi_period('2026-12-01')), '2026-11-10'::dat
 select is((select project_balance_pkr from public.kpi_period('2026-10-01')), public.ledger_balance_at('2026-10-31'),
   'project account at month end');
 
+-- revenue by stay month: earned and on-the-books kept apart; cancellation payout on its received date
+insert into public.bookings (id, channel_id, check_in, check_out, status, source)
+select ('22222222-0000-0000-0000-000000000003'), id, '2026-11-20', '2026-11-22', 'cancelled', 'manual' from public.channels where code = 'direct';
+insert into public.payments (booking_id, kind, currency, amount_due, status, amount_received, received_date)
+values ('22222222-0000-0000-0000-000000000003', 'cancellation_payout', 'PKR', 5000, 'received', 5000, '2026-11-03');
+select results_eq($$ select stay_earned_pkr, stay_booked_pkr, other_revenue_pkr from public.kpi_period('2026-10-01') $$,
+  $$ values (20000.00::numeric, 0::numeric, 0::numeric) $$, 'October revenue: the completed stay');
+select results_eq($$ select stay_earned_pkr, stay_booked_pkr, other_revenue_pkr from public.kpi_period('2026-11-01') $$,
+  $$ values (0::numeric, 12000.00::numeric, 5000.00::numeric) $$, 'November: one night on the books, cancellation payout earned');
+select results_eq($$ select stay_earned_pkr, stay_booked_pkr, other_revenue_pkr from public.kpi_period(null) $$,
+  $$ values (20000.00::numeric, 36000.00::numeric, 5000.00::numeric) $$, 'total so far');
+select is((select stay_earned_pkr + stay_booked_pkr + other_revenue_pkr from public.kpi_period('2026-11-01')),
+  (select stay_revenue_pkr + other_revenue_pkr from public.monthly_pnl_accrual where month = '2026-11-01'),
+  'same month revenue as the accrual P&L');
+
 -- matches the existing overview figures
 select is((select realized_pkr from public.kpi_period(null)), (select realized_to_date_pkr from public.overview_kpis()), 'same realized total as overview_kpis');
 select is((select net_profit_pkr from public.kpi_period(null)), (select realized_net_profit_pkr from public.overview_kpis()), 'same net profit as overview_kpis');

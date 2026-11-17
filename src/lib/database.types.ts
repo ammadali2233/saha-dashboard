@@ -858,7 +858,7 @@ isOneToOne: false
                            },
 "kpi_period":
 { Args: { "p_exclude_nonstandard"?: boolean,"p_month"?: string }; Returns: {
-              "adr_has_estimates": boolean,"adr_pkr": number,"as_of": string,"available": number,"capital_recovered_pct": number,"completed_nights": number,"deposits_held_pkr": number,"guest_balances_due_pkr": number,"net_profit_pkr": number,"occ_rate": number,"occupied": number,"on_the_books_has_estimates": boolean,"on_the_books_pkr": number,"opex_paid_pkr": number,"opex_pkr": number,"pending_payouts_count": number,"pending_payouts_pkr_est": number,"period_end": string,"period_start": string,"project_balance_pkr": number,"realized_pkr": number,"total_invested_pkr": number
+              "adr_has_estimates": boolean,"adr_pkr": number,"as_of": string,"available": number,"capital_recovered_pct": number,"completed_nights": number,"deposits_held_pkr": number,"guest_balances_due_pkr": number,"net_profit_pkr": number,"occ_rate": number,"occupied": number,"on_the_books_has_estimates": boolean,"on_the_books_pkr": number,"opex_paid_pkr": number,"opex_pkr": number,"other_revenue_pkr": number,"pending_payouts_count": number,"pending_payouts_pkr_est": number,"period_end": string,"period_start": string,"project_balance_pkr": number,"realized_pkr": number,"stay_booked_pkr": number,"stay_earned_pkr": number,"stay_has_estimates": boolean,"total_invested_pkr": number
             }[]
                            },
 "ledger_balance_at":

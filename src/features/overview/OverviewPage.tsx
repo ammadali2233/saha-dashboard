@@ -113,6 +113,23 @@ export function OverviewPage() {
             hint: 'Cash received, in PKR',
           })}
         </Kpi>
+        <Kpi label="Revenue (by stay)" initial={thisMonth} exclude={exclude}>
+          {(k, p) => ({
+            to: '/reports',
+            value: (
+              <Money
+                amount={Number(k.stay_earned_pkr) + Number(k.other_revenue_pkr)}
+                currency="PKR"
+                estimate={!!k.stay_has_estimates}
+              />
+            ),
+            hint: (
+              <>
+                Earned from {p === 'all' ? 'completed stays' : 'nights this month'} · <Money amount={k.stay_booked_pkr} currency="PKR" /> more on the books
+              </>
+            ),
+          })}
+        </Kpi>
         <Kpi label="Operating costs" initial={thisMonth} exclude={exclude}>
           {(k, p) => ({
             to: p === 'all' ? '/money?tab=operating' : `/money?tab=operating&month=${p}`,
