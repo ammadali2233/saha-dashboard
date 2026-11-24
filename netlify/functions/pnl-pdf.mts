@@ -25,8 +25,8 @@ export default async (req: Request) => {
   if (error) return new Response(error.message, { status: 500 })
   const rows = (data ?? []) as Record<string, unknown>[]
 
-  const head = mode === 'accrual' ? ['Month', 'Nights', 'Stay revenue', 'Other revenue', 'Operating costs', 'Net'] : ['Month', 'Realized revenue', 'Paid operating costs', 'Net']
-  const keys = mode === 'accrual' ? ['nights', 'stay_revenue_pkr', 'other_revenue_pkr', 'operating_expenses_pkr', 'net_profit_pkr'] : ['realized_revenue_pkr', 'paid_operating_pkr', 'net_profit_pkr']
+  const head = mode === 'accrual' ? ['Month', 'Nights', 'Earned', 'On the books', 'Other revenue', 'Operating costs', 'Net'] : ['Month', 'Realized revenue', 'Paid operating costs', 'Net']
+  const keys = mode === 'accrual' ? ['nights', 'earned_revenue_pkr', 'booked_revenue_pkr', 'other_revenue_pkr', 'operating_expenses_pkr', 'net_profit_pkr'] : ['realized_revenue_pkr', 'paid_operating_pkr', 'net_profit_pkr']
   const body = rows.map((r) => [label(String(r.month)), ...keys.map((k) => (k === 'nights' ? String(r[k] ?? 0) : pkr(r[k])))])
   const totals = ['Total', ...keys.map((k) => {
     const t = rows.reduce((a, r) => a + Number(r[k] ?? 0), 0)

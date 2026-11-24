@@ -94,9 +94,9 @@ export function ReportsPage() {
 
   const pnlRows =
     mode === 'accrual'
-      ? (q.data?.accrual ?? []).map((r) => [r.month!.slice(0, 7), Number(r.nights), Number(r.stay_revenue_pkr), Number(r.other_revenue_pkr), Number(r.operating_expenses_pkr), Number(r.net_profit_pkr)])
+      ? (q.data?.accrual ?? []).map((r) => [r.month!.slice(0, 7), Number(r.nights), Number(r.earned_revenue_pkr), Number(r.booked_revenue_pkr), Number(r.other_revenue_pkr), Number(r.operating_expenses_pkr), Number(r.net_profit_pkr)])
       : (q.data?.cash ?? []).map((r) => [r.month!.slice(0, 7), Number(r.realized_revenue_pkr), Number(r.paid_operating_pkr), Number(r.net_profit_pkr)])
-  const pnlHead = mode === 'accrual' ? ['Month', 'Nights', 'Stay revenue', 'Other revenue', 'Operating costs', 'Net'] : ['Month', 'Realized revenue', 'Paid operating costs', 'Net']
+  const pnlHead = mode === 'accrual' ? ['Month', 'Nights', 'Earned', 'On the books', 'Other revenue', 'Operating costs', 'Net'] : ['Month', 'Realized revenue', 'Paid operating costs', 'Net']
   const totals = pnlHead.map((_, i) => (i === 0 ? 'Total' : pnlRows.reduce((a, r) => a + Number(r[i] ?? 0), 0)))
 
   const pdf = useMutation({
@@ -149,7 +149,7 @@ export function ReportsPage() {
             <CardContent>
               <p className="mb-2 text-xs text-muted-foreground">
                 {mode === 'accrual'
-                  ? 'Accrual: stay revenue by the night it falls on, other revenue on its date, costs by the month incurred. Future months are on the books, not earned.'
+                  ? 'Accrual: stay revenue by the night it falls on, other revenue on its date, costs by the month incurred. Earned = completed stays; On the books = nights of stays not yet completed. Net includes both.'
                   : 'Cash: money that reached the project account and costs actually paid, by date.'}
               </p>
               <div className="overflow-x-auto">

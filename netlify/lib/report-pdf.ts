@@ -22,7 +22,7 @@ export const pkr = (n: unknown) => formatMoney(Number(n ?? 0), 'PKR')
 /** A simple table: first column flexible, the rest right-aligned numbers. */
 export function table(head: string[], rows: (string | number)[][], opts: { totalRow?: boolean } = {}) {
   const cell = (v: string | number, i: number, bold = false) =>
-    h(Text, { key: `c${i}`, style: [i === 0 ? { flex: 1 } : { width: 80, textAlign: 'right' as const }, bold ? s.bold : {}] }, String(v))
+    h(Text, { key: `c${i}`, style: [i === 0 ? { flex: 1 } : { width: 72, textAlign: 'right' as const }, bold ? s.bold : {}] }, String(v))
   return h(
     View,
     null,
@@ -47,7 +47,7 @@ export function pnlPdf(p: { mode: 'accrual' | 'cash'; from: string; to: string; 
       Text,
       { style: s.note },
       p.mode === 'accrual'
-        ? 'Accrual: stay revenue by the night it falls on, other revenue on its date, operating costs by the month incurred. Setup costs are capital and not included. USD stays use the actual payout rate, or the default rate (estimate) until forwarded.'
+        ? 'Accrual: stay revenue by the night it falls on, other revenue on its date, operating costs by the month incurred. Earned = completed stays; On the books = nights of stays not yet completed; Net includes both. Setup costs are capital and not included. USD stays use the actual payout rate, or the default rate (estimate) until forwarded.'
         : 'Cash: money that reached the project account and operating costs actually paid, by date. Setup costs are capital and not included.',
     ),
   ])
